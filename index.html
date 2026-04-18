@@ -3,11 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>PokeMap</title>
+    <script>
+      // Force trailing slash for /pokemap subdirectory deployments
+      (function() {
+        var p = window.location.pathname;
+        if (p.toLowerCase().endsWith('/pokemap')) {
+          window.location.replace(p + '/');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
 

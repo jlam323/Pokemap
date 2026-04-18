@@ -33,7 +33,9 @@ export default function GameCanvas() {
   useEffect(() => {
     // Load map image
     const img = new Image();
-    img.src = '/cerulean-city.png';
+    // Resolve path dynamically based on Vite's base
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '') || '.';
+    img.src = `${base}/cerulean-city-map.png`;
     img.onload = () => {
       console.log('Map image loaded successfully');
       mapImageRef.current = img;
