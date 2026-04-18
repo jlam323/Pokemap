@@ -1,6 +1,6 @@
 {
-  "name": "Pokemon Map",
-  "description": "A Pokemon-style 2D pixel art exploration game with keyboard movement and NPC interactions.",
+  "name": "PokeMap",
+  "description": "A classic grid-based 2D exploration game with multiple handheld console overlays and interactive dialogue.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

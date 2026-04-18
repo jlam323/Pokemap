@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { DialogueBox } from './ui/DialogueBox';
 import { GBCOverlay } from './overlays/GBCOverlay';
@@ -55,33 +55,57 @@ export default function GameCanvas() {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    // Initial size measurement
-    if (containerRef.current) {
-      const d = {
-        width: containerRef.current.clientWidth,
-        height: containerRef.current.clientHeight
-      };
-      setDimensions(d);
-      dimensionsRef.current = d;
-    }
+    let observedElement: HTMLElement | null = null;
+    let observer: ResizeObserver | null = null;
+    let frameId: number;
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
+    const measure = () => {
+      const el = containerRef.current;
+      if (el) {
         const d = {
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
+          width: el.clientWidth,
+          height: el.clientHeight
         };
-        setDimensions(d);
-        dimensionsRef.current = d;
+        if (d.width > 0 && d.height > 0) {
+          setDimensions(d);
+          dimensionsRef.current = d;
+          
+          if (observedElement !== el) {
+            if (observer) observer.disconnect();
+            observer = new ResizeObserver((entries) => {
+              for (const entry of entries) {
+                const newD = {
+                  width: entry.contentRect.width,
+                  height: entry.contentRect.height
+                };
+                setDimensions(newD);
+                dimensionsRef.current = newD;
+              }
+            });
+            observer.observe(el);
+            observedElement = el;
+          }
+          return true;
+        }
       }
-    });
+      return false;
+    };
 
-    if (containerRef.current) observer.observe(containerRef.current);
+    const startTime = Date.now();
+    const checkMeasure = () => {
+      measure();
+      // Keep checking for at least 2 seconds to handle transition delays perfectly
+      if (Date.now() - startTime < 2000) {
+        frameId = requestAnimationFrame(checkMeasure);
+      }
+    };
+    checkMeasure();
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-      observer.disconnect();
+      if (observer) observer.disconnect();
+      cancelAnimationFrame(frameId);
     };
   }, [handleInteraction, keysPressed, overlayMode]);
 
@@ -233,61 +257,94 @@ export default function GameCanvas() {
         ))}
       </div>
 
-      {overlayMode === 'none' && (
-        <div ref={containerRef} className="fixed inset-0 bg-black z-0">
-          {renderCanvas()}
-          <AnimatePresence>
-            {gameState.isTalking && gameState.activeDialogue && (
-              <DialogueBox gameState={gameState} isFullScreen />
-            )}
-          </AnimatePresence>
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl opacity-60 hover:opacity-100 transition-all duration-300 z-10 shadow-2xl group">
-              <div className="flex flex-col items-center gap-1">
-                  <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">W</kbd>
-                  <div className="flex gap-1">
-                      <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">A</kbd>
-                      <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">S</kbd>
-                      <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">D</kbd>
-                  </div>
-              </div>
-              <div className="h-12 w-[1px] bg-white opacity-20" />
-              <div className="flex flex-col items-center gap-2">
-                  <kbd className="px-6 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest">SPACE</kbd>
-                  <span className="text-[8px] text-white/40 font-bold tracking-[2px]">TALK</span>
-              </div>
-          </div>
-        </div>
-      )}
-
-      {overlayMode !== 'none' && (
-        <div className="flex flex-col items-center justify-center h-full w-full">
-          <div className="transition-all duration-500 flex flex-col items-center">
-            {overlayMode === 'gbc' && (
-              <GBCOverlay 
-                 gameState={gameState} 
-                 handleInteraction={handleInteraction} 
-                 keysPressed={keysPressed}
-              >
-                <div ref={containerRef} className="w-full h-full">
-                  {renderCanvas()}
+      <AnimatePresence mode="wait">
+        {overlayMode === 'none' && (
+          <motion.div 
+            key="fullscreen"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            ref={containerRef} 
+            className="fixed inset-0 bg-black z-0"
+          >
+            {renderCanvas()}
+            <AnimatePresence>
+              {gameState.isTalking && gameState.activeDialogue && (
+                <DialogueBox gameState={gameState} isFullScreen />
+              )}
+            </AnimatePresence>
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl opacity-60 hover:opacity-100 transition-all duration-300 z-10 shadow-2xl group">
+                <div className="flex flex-col items-center gap-1">
+                    <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">W</kbd>
+                    <div className="flex gap-1">
+                        <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">A</kbd>
+                        <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">S</kbd>
+                        <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">D</kbd>
+                    </div>
                 </div>
-              </GBCOverlay>
-            )}
-
-            {overlayMode === 'gba' && (
-              <GBAOverlay 
-                 gameState={gameState} 
-                 handleInteraction={handleInteraction} 
-                 keysPressed={keysPressed}
-              >
-                <div ref={containerRef} className="w-full h-full">
-                  {renderCanvas()}
+                <div className="h-12 w-[1px] bg-white opacity-20" />
+                <div className="flex flex-col items-center gap-2">
+                    <kbd className="px-6 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest">SPACE</kbd>
+                    <span className="text-[8px] text-white/40 font-bold tracking-[2px]">TALK</span>
                 </div>
-              </GBAOverlay>
-            )}
-          </div>
-        </div>
-      )}
+            </div>
+          </motion.div>
+        )}
+
+        {overlayMode !== 'none' && (
+          <motion.div 
+            key="overlay"
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+            className="flex flex-col items-center justify-center h-full w-full"
+          >
+            <AnimatePresence mode="wait">
+              {overlayMode === 'gbc' && (
+                <motion.div
+                  key="gbc"
+                  initial={{ opacity: 0, rotateY: -10 }}
+                  animate={{ opacity: 1, rotateY: 0 }}
+                  exit={{ opacity: 0, rotateY: 10 }}
+                  className="transition-all duration-500 flex flex-col items-center"
+                >
+                  <GBCOverlay 
+                     gameState={gameState} 
+                     handleInteraction={handleInteraction} 
+                     keysPressed={keysPressed}
+                  >
+                    <div ref={containerRef} className="w-full h-full">
+                      {renderCanvas()}
+                    </div>
+                  </GBCOverlay>
+                </motion.div>
+              )}
+
+              {overlayMode === 'gba' && (
+                <motion.div
+                  key="gba"
+                  initial={{ opacity: 0, rotateX: 10 }}
+                  animate={{ opacity: 1, rotateX: 0 }}
+                  exit={{ opacity: 0, rotateX: -10 }}
+                  className="transition-all duration-500 flex flex-col items-center"
+                >
+                  <GBAOverlay 
+                     gameState={gameState} 
+                     handleInteraction={handleInteraction} 
+                     keysPressed={keysPressed}
+                  >
+                    <div ref={containerRef} className="w-full h-full">
+                      {renderCanvas()}
+                    </div>
+                  </GBAOverlay>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
