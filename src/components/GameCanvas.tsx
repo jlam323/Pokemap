@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { ArrowLeft } from 'lucide-react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { DialogueBox } from './ui/DialogueBox';
 import { GBCOverlay } from './overlays/GBCOverlay';
@@ -13,7 +14,9 @@ export default function GameCanvas() {
   const mapImageRef = useRef<HTMLImageElement | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [overlayMode, setOverlayMode] = useState<'none' | 'gbc' | 'gba'>('gbc');
+  const [displayedOverlayMode, setDisplayedOverlayMode] = useState(overlayMode);
   const overlayModeRef = useRef(overlayMode);
+  const displayedOverlayRef = useRef(displayedOverlayMode);
   const dimensionsRef = useRef(dimensions);
   const lastTimeRef = useRef<number>(0);
 
@@ -29,6 +32,10 @@ export default function GameCanvas() {
   useEffect(() => {
     overlayModeRef.current = overlayMode;
   }, [overlayMode]);
+
+  useEffect(() => {
+    displayedOverlayRef.current = displayedOverlayMode;
+  }, [displayedOverlayMode]);
 
   useEffect(() => {
     // Load map image
@@ -118,11 +125,13 @@ export default function GameCanvas() {
     const dpr = window.devicePixelRatio || 1;
     const totalMapWidth = MAP_WIDTH * TILE_SIZE;
     const totalMapHeight = MAP_HEIGHT * TILE_SIZE;
-    const currentOverlay = overlayModeRef.current;
+    const currentOverlay = displayedOverlayRef.current;
     const isNone = currentOverlay === 'none';
 
-    const minVisibleTiles = isNone ? 50 : 22; 
-    const maxVisibleTiles = isNone ? 80 : 38; 
+    const isGBC = currentOverlay === 'gbc';
+    const isGBA = currentOverlay === 'gba';
+    const minVisibleTiles = isNone ? 50 : (isGBC ? 16 : 22); 
+    const maxVisibleTiles = isNone ? 80 : (isGBC ? 16 : 38); 
     const baseVisibleTiles = width / TILE_SIZE;
 
     let scale = 1;
@@ -242,12 +251,26 @@ export default function GameCanvas() {
 
   return (
     <div className="relative h-screen w-screen bg-[#1a1a1a] overflow-hidden font-mono uppercase">
+      {/* Home Button - Always Visible */}
+      <a 
+        href="https://jonalam.com" 
+        className="fixed top-8 left-8 z-[110] flex items-center gap-3 px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all group shadow-2xl pointer-events-auto"
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        <span className="text-[10px] font-black tracking-[3px] uppercase">jonalam.com</span>
+      </a>
+
       {/* Mode Toggle Overlay - Always Visible */}
       <div className="fixed top-8 left-1/2 -translate-x-1/2 flex gap-1 z-[100] pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl">
         {(['none', 'gbc', 'gba'] as const).map(mode => (
           <button
             key={mode}
-            onClick={() => setOverlayMode(mode)}
+            onClick={() => {
+              if (mode === overlayMode) return;
+              // If we are coming from 'none', we might want a slightly faster sync?
+              // Actually keeping it consistent is cleaner.
+              setOverlayMode(mode);
+            }}
             className={`px-6 py-2 text-[9px] font-black tracking-[3px] rounded-full transition-all duration-300 ${
               overlayMode === mode 
                 ? 'bg-white text-black shadow-[0_4px_12px_rgba(0,0,0,0.5)] scale-105' 
@@ -259,7 +282,7 @@ export default function GameCanvas() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" onExitComplete={() => setDisplayedOverlayMode(overlayMode)}>
         {overlayMode === 'none' && (
           <motion.div 
             key="fullscreen"
@@ -303,7 +326,7 @@ export default function GameCanvas() {
             transition={{ type: 'spring', damping: 20, stiffness: 100 }}
             className="flex flex-col items-center justify-center h-full w-full"
           >
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" onExitComplete={() => setDisplayedOverlayMode(overlayMode)}>
               {overlayMode === 'gbc' && (
                 <motion.div
                   key="gbc"

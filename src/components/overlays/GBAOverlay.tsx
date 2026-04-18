@@ -42,7 +42,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
       initial="hidden"
       animate="show"
       variants={containerVariants}
-      className="relative w-[90vw] max-w-[1100px] aspect-[1.7/1] flex items-center justify-center p-4"
+      className="relative w-[75vw] max-w-[1000px] max-h-[80vh] aspect-[1.6/1] flex items-center justify-center p-4 transition-all duration-700"
       style={{
         filter: 'drop-shadow(20px 20px 0px rgba(0,0,0,0.2))'
       }}
@@ -59,7 +59,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
       {/* L Shoulder Notch */}
       <motion.div 
         variants={itemVariants} 
-        className="absolute top-[2.5%] left-[2.5%] w-[16%] h-[20%] bg-[#8d80c9] rounded-t-[40px] border-x-4 border-t-2 border-black/10 shadow-[inset_0_4px_8px_rgba(255,255,255,0.2)] z-0 flex items-start justify-start pl-8 pt-1"
+        className="absolute top-[2.5%] left-[2.5%] w-[16%] h-[20%] bg-[#8d80c9] rounded-t-[4vh] border-x-[0.4vh] border-t-[0.2vh] border-black/10 shadow-[inset_0_0.4vh_0.8vh_rgba(255,255,255,0.2)] z-0 flex items-start justify-start pl-[2vh] pt-[1vh]"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           keysPressed.current?.add('l');
@@ -73,13 +73,13 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
           keysPressed.current?.delete('l');
         }}
       >
-        <span className="text-white/40 text-[10px] font-black">L</span>
+        <span className="text-white/40 text-[1.8vh] font-black">L</span>
       </motion.div>
 
       {/* R Shoulder Notch */}
       <motion.div 
         variants={itemVariants} 
-        className="absolute top-[2.5%] right-[2.5%] w-[16%] h-[20%] bg-[#8d80c9] rounded-t-[40px] border-x-4 border-t-2 border-black/10 shadow-[inset_0_4px_8px_rgba(255,255,255,0.2)] z-0 flex items-start justify-end pr-8 pt-1"
+        className="absolute top-[2.5%] right-[2.5%] w-[16%] h-[20%] bg-[#8d80c9] rounded-t-[4vh] border-x-[0.4vh] border-t-[0.2vh] border-black/10 shadow-[inset_0_0.4vh_0.8vh_rgba(255,255,255,0.2)] z-0 flex items-start justify-end pr-[2vh] pt-[1vh]"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           keysPressed.current?.add('r');
@@ -93,12 +93,12 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
           keysPressed.current?.delete('r');
         }}
       >
-        <span className="text-white/40 text-[10px] font-black">R</span>
+        <span className="text-white/40 text-[1.8vh] font-black">R</span>
       </motion.div>
 
       {/* Main GBA Body with Notches */}
       <div 
-        className="absolute inset-0 bg-[#634fb1] border-4 border-[#4d3b8f] shadow-[inset_-4px_-4px_12px_rgba(0,0,0,0.3),inset_4px_4px_12px_rgba(255,255,255,0.4)] transition-all duration-700 z-1  translate-x-[%]"
+        className="absolute inset-0 bg-[#634fb1] border-[0.4vh] border-[#4d3b8f] shadow-[inset_-0.4vh_-0.4vh_1.2vh_rgba(0,0,0,0.3),inset_0.4vh_0.4vh_1.2vh_rgba(255,255,255,0.4)] transition-all duration-700 z-1  translate-x-[%]"
         style={{
           clipPath: 'url(#gba-clip)',
         }}
@@ -109,11 +109,11 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
 
       {/* Left Control Column */}
       <div className="w-[20%] h-full flex flex-col items-center justify-center gap-[10%] z-10 shrink-0">
-        <motion.div variants={itemVariants} className="relative w-[12vh] h-[12vh] aspect-square flex items-center justify-center ">
-          <div className="absolute w-full h-[30%] bg-[#2d2d2d] rounded-sm shadow-md" />
-          <div className="absolute w-[30%] h-full bg-[#2d2d2d] rounded-sm shadow-md" />
+        <motion.div variants={itemVariants} className="relative w-[14vh] h-[14vh] aspect-square flex items-center justify-center ">
+          <div className="absolute w-full h-[30%] bg-[#2d2d2d] rounded-[0.2vh] shadow-[0.2vh_0.2vh_0px_rgba(0,0,0,0.4)]" />
+          <div className="absolute w-[30%] h-full bg-[#2d2d2d] rounded-[0.2vh] shadow-[0.2vh_0.2vh_0px_rgba(0,0,0,0.4)]" />
           <button 
-            className="absolute top-0 w-[32%] h-[35%] rounded-sm hover:bg-black active:-translate-y-0.5 transition-all text-white/30 flex items-center justify-center outline-none" 
+            className="absolute top-0 w-[32%] h-[35%] rounded-[0.2vh] hover:bg-black active:-translate-y-[0.1vh] transition-all text-white/30 flex items-center justify-center outline-none" 
             onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('w'); }} 
             onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('w'); }}
             onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('w'); }}
@@ -121,7 +121,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
             <ArrowBigUp className="w-[70%] h-[70%]" />
           </button>
           <button 
-            className="absolute bottom-0 w-[32%] h-[35%] rounded-sm hover:bg-black active:translate-y-0.5 transition-all text-white/30 flex items-center justify-center outline-none" 
+            className="absolute bottom-0 w-[32%] h-[35%] rounded-[0.2vh] hover:bg-black active:translate-y-[0.1vh] transition-all text-white/30 flex items-center justify-center outline-none" 
             onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('s'); }} 
             onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('s'); }}
             onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('s'); }}
@@ -129,7 +129,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
             <ArrowBigDown className="w-[70%] h-[70%]" />
           </button>
           <button 
-            className="absolute left-0 w-[35%] h-[32%] rounded-sm hover:bg-black active:-translate-x-0.5 transition-all text-white/30 flex items-center justify-center outline-none" 
+            className="absolute left-0 w-[35%] h-[32%] rounded-[0.2vh] hover:bg-black active:-translate-x-[0.1vh] transition-all text-white/30 flex items-center justify-center outline-none" 
             onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('a'); }} 
             onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('a'); }}
             onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('a'); }}
@@ -137,7 +137,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
             <ArrowBigLeft className="w-[70%] h-[70%]" />
           </button>
           <button 
-            className="absolute right-0 w-[35%] h-[32%] rounded-sm hover:bg-black active:translate-x-0.5 transition-all text-white/30 flex items-center justify-center outline-none" 
+            className="absolute right-0 w-[35%] h-[32%] rounded-[0.2vh] hover:bg-black active:translate-x-[0.1vh] transition-all text-white/30 flex items-center justify-center outline-none" 
             onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('d'); }} 
             onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('d'); }}
             onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('d'); }}
@@ -148,14 +148,14 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
         </motion.div>
 
         {/* Start / Select Buttons */}
-        <div className="flex flex-col gap-3 rotate-[20deg] mt-6 translate-x-5">
+        <div className="flex flex-col gap-[1vh] rotate-[20deg] mt-[2vh] translate-x-[2vh]">
           <motion.div 
             variants={itemVariants}
-            className="w-30 h-8 bg-[#3d3d3d] rounded-full border border-white/5 flex items-center px-1 relative"
+            className="w-[15vh] h-[3.5vh] bg-[#3d3d3d] rounded-full border border-white/5 flex items-center px-[0.5vh] relative"
           >
-            <span className="text-[10px] text-white/30 font-black tracking-widest ml-1 select-none pointer-events-none">SELECT</span>
+            <span className="text-[1.5vh] text-white/30 font-black tracking-widest ml-[0.5vh] select-none pointer-events-none">SELECT</span>
             <button 
-              className="absolute right-1 w-5 h-5 rounded-full bg-[#C4C4C4] shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.5)] active:translate-y-[1px] active:scale-95 active:shadow-none transition-all cursor-pointer outline-none border-none"
+              className="absolute right-[0.5vh] w-[2.5vh] h-[2.5vh] rounded-full bg-[#C4C4C4] shadow-[0.2vh_0.2vh_0px_rgba(0,0,0,0.5)] active:translate-y-[0.1vh] active:scale-95 active:shadow-none transition-all cursor-pointer outline-none border-none"
               onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('Backspace'); }}
               onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Backspace'); }}
               onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Backspace'); }}
@@ -164,11 +164,11 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
           </motion.div>
           <motion.div 
             variants={itemVariants}
-            className="w-30 h-8 bg-[#3d3d3d] rounded-full border border-white/5 flex items-center px-1 relative translate-x-[10%]"
+            className="w-[15vh] h-[3.5vh] bg-[#3d3d3d] rounded-full border border-white/5 flex items-center px-[0.5vh] relative translate-x-[10%]"
           >
-            <span className="text-[10px] text-white/30 font-black tracking-widest ml-1 select-none pointer-events-none">START</span>
+            <span className="text-[1.5vh] text-white/30 font-black tracking-widest ml-[0.5vh] select-none pointer-events-none">START</span>
             <button 
-              className="absolute right-1 w-5 h-5 rounded-full bg-[#C4C4C4] shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.5)] active:translate-y-[1px] active:scale-95 active:shadow-none transition-all cursor-pointer outline-none border-none"
+              className="absolute right-[0.5vh] w-[2.5vh] h-[2.5vh] rounded-full bg-[#C4C4C4] shadow-[0.2vh_0.2vh_0px_rgba(0,0,0,0.5)] active:translate-y-[0.1vh] active:scale-95 active:shadow-none transition-all cursor-pointer outline-none border-none"
               onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('Enter'); }}
               onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Enter'); }}
               onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Enter'); }}
@@ -179,13 +179,13 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
       </div>
 
       {/* Hub Screen GBA */}
-      <div className="flex-1 h-full py-6 md:py-10 flex items-center justify-center px-2 z-10 mt-[-6%]">
-        <div className="w-full aspect-[3/2] bg-[#222] rounded-xl p-4 md:p-6 shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] border-y-8 border-black/30 flex items-center justify-center relative overflow-hidden ring-4 ring-black/20">
+      <div className="flex-1 h-full py-[3vh] flex items-center justify-center px-[1vh] z-10 mt-[-6%]">
+        <div className="w-full aspect-[3/2] bg-[#222] rounded-[2vh] p-[2vh] shadow-[inset_0_0_3vh_rgba(0,0,0,0.9)] border-y-[0.8vh] border-black/30 flex items-center justify-center relative overflow-hidden ring-[0.4vh] ring-black/20">
           <div className="w-full h-full bg-black relative shadow-inner">
             {children}
             <AnimatePresence mode="wait">
               {gameState.isTalking && gameState.activeDialogue && (
-                <DialogueBox gameState={gameState} fontSize="text-xs" />
+                <DialogueBox gameState={gameState} fontSize="text-[1.2vh]" />
               )}
             </AnimatePresence>
           </div>
@@ -195,9 +195,9 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
       </div>
 
       {/* Right Control Column */}
-      <div className="w-[20%] h-full flex flex-col items-center justify-center relative z-10 shrink-0 mt-[-13%]">
-        <div className="flex gap-[12%] rotate-[-15deg] translate-y-[-40%] w-[90%]">
-          <motion.div variants={itemVariants} className="flex flex-col items-center gap-[0.5vw] translate-y-[30%]">
+      <div className="w-[20%] h-full flex flex-col items-center justify-center relative z-10 shrink-0 mt-[-15%]">
+        <div className="flex gap-[15%] rotate-[-15deg] translate-y-[-20%] translate-x-[-5%] w-[90%] justify-center">
+          <motion.div variants={itemVariants} className="flex flex-col items-center gap-[0.5vh] translate-y-[40%]">
             <button 
               onPointerDown={(e) => {
                 e.currentTarget.setPointerCapture(e.pointerId);
@@ -212,12 +212,12 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
                 e.currentTarget.releasePointerCapture(e.pointerId);
                 keysPressed.current?.delete(' ');
               }}
-              className="w-[4vw] h-[4vw] rounded-full bg-[#3d3d3d] shadow-[0.3vw_0.3vw_0px_rgba(0,0,0,0.4),inset_-0.2vw_-0.2vw_0.6vw_rgba(0,0,0,0.5)] active:translate-y-[0.3vw] active:shadow-none transition-all flex items-center justify-center text-white/50 font-black text-[2vw] border-[0.2vw] border-white/5 outline-none"
+              className="w-[8vh] h-[8vh] rounded-full bg-[#3d3d3d] shadow-[0.6vh_0.6vh_0px_rgba(0,0,0,0.4),inset_-0.3vh_-0.3vh_0.8vh_rgba(0,0,0,0.5)] active:translate-y-[0.4vh] active:shadow-none transition-all flex items-center justify-center text-white/50 font-black text-[3.5vh] border-[0.2vh] border-white/5 outline-none"
             >
               B
             </button>
           </motion.div>
-          <motion.div variants={itemVariants} className="flex flex-col items-center gap-[0.5vw] -translate-y-[10%]">
+          <motion.div variants={itemVariants} className="flex flex-col items-center gap-[0.5vh] -translate-y-0">
             <button 
               onPointerDown={(e) => {
                 e.currentTarget.setPointerCapture(e.pointerId);
@@ -232,7 +232,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
                 e.currentTarget.releasePointerCapture(e.pointerId);
                 keysPressed.current?.delete('enter');
               }}
-              className="w-[4vw] h-[4vw] rounded-full bg-[#3d3d3d] shadow-[0.3vw_0.3vw_0px_rgba(0,0,0,0.4),inset_-0.2vw_-0.2vw_0.6vw_rgba(0,0,0,0.5)] active:translate-y-[0.3vw] active:shadow-none transition-all flex items-center justify-center text-white/50 font-black text-[2vw] border-[0.2vw] border-white/5 outline-none"
+              className="w-[8vh] h-[8vh] rounded-full bg-[#3d3d3d] shadow-[0.6vh_0.6vh_0px_rgba(0,0,0,0.4),inset_-0.3vh_-0.3vh_0.8vh_rgba(0,0,0,0.5)] active:translate-y-[0.4vh] active:shadow-none transition-all flex items-center justify-center text-white/50 font-black text-[3.5vh] border-[0.2vh] border-white/5 outline-none"
             >
               A
             </button>
@@ -240,26 +240,25 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
         </div>
       </div>
       
+      {/* Power Light */}
+      <div className="absolute right-[7%] top-[10%] flex flex-row items-center gap-3 z-20">
+        <div className="w-[1.3vh] h-[1.3vh] rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse" />
+        <motion.p variants={itemVariants} className="text-white/50 text-[2vh] md:text-[2vh] font-bold tracking-[0.6vh] md:tracking-[0.6vh] uppercase">POWER</motion.p>
+      </div>
+
       {/* GBA Logo text */}
-      <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10 opacity-60">
-        <motion.p variants={itemVariants} className="text-white text-[14px] md:text-[18px] italic font-black tracking-[15px] md:tracking-[22px] uppercase">GameBoy</motion.p>
-        <div className="w-20 h-[1.5px] bg-white opacity-30" />
-        <motion.p variants={itemVariants} className="text-white text-[8px] md:text-[12px] font-bold tracking-[6px] md:tracking-[12px] uppercase">Advance</motion.p>
+      <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[0.5vh] z-10 opacity-60">
+        <motion.p variants={itemVariants} className="text-white text-[1.8vh] md:text-[2.2vh] italic font-black tracking-[1.5vh] md:tracking-[2.2vh] uppercase">GameBoy</motion.p>
+        <div className="w-[8vh] h-[0.15vh] bg-white opacity-30" />
+        <motion.p variants={itemVariants} className="text-white text-[1vh] md:text-[1.4vh] font-bold tracking-[0.6vh] md:tracking-[1.2vh] uppercase">Advance</motion.p>
       </div>
 
       {/* Speaker Grille */}
-      <motion.div variants={itemVariants} className="absolute bottom-[23%] right-[9%] flex gap-[0.4vh] rotate-[90deg] opacity-20 group-hover:opacity-40 transition-opacity z-10">
+      <motion.div variants={itemVariants} className="absolute bottom-[23%] right-[11%] flex gap-[0.4vh] rotate-[90deg] opacity-20 group-hover:opacity-40 transition-opacity z-10">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="w-[0.8vh] h-[11vh] bg-black rounded-full skew-x-[15deg]" />
         ))}
       </motion.div>
-
-      {/* Decorative Speaker Grill */}
-      <div className="absolute right-[4%] bottom-[15%] grid grid-cols-3 gap-1 z-10 opacity-20">
-        {[...Array(9)].map((_, i) => (
-          <div key={i} className="w-1 h-1 bg-black rounded-full" />
-        ))}
-      </div>
     </motion.div>
   );
 };
