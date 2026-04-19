@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Entity, GameState, Position } from '../types';
+import { Entity, GameState, Position, Direction } from '../types';
 import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, MOVE_DURATION } from '../constants';
 import mapTileGrid from '../data/map_tile_grid.json';
 
@@ -55,6 +55,9 @@ export function useGameEngine() {
   const stateRef = useRef<GameState>(gameState);
   const keysPressed = useRef<Set<string>>(new Set());
   const moveTimerRef = useRef<number>(0);
+  const bobTimerRef = useRef<number>(0);
+  const lastStepDirRef = useRef<Direction | null>(null);
+  const footCycleRef = useRef<number>(1);
   const startPosRef = useRef<Position>(INITIAL_PLAYER.pos);
   const targetPosRef = useRef<Position>(INITIAL_PLAYER.pos);
 
@@ -109,15 +112,25 @@ export function useGameEngine() {
 
       player.pos.x = startPosRef.current.x + (targetPosRef.current.x - startPosRef.current.x) * progress;
       player.pos.y = startPosRef.current.y + (targetPosRef.current.y - startPosRef.current.y) * progress;
-      
-      player.walkFrame = Math.floor(progress * 4) % 4;
 
       if (progress >= 1) {
         player.isMoving = false;
         player.pos = { ...targetPosRef.current };
-        player.walkFrame = 0;
+        player.walkFrame = player.isSurfing ? footCycleRef.current : 0;
       }
     } else {
+      // Bobbing logic for surfing
+      if (player.isSurfing) {
+        bobTimerRef.current += dt;
+        if (bobTimerRef.current >= 750) {
+          bobTimerRef.current -= 750;
+          footCycleRef.current = footCycleRef.current === 1 ? 2 : 1;
+          player.walkFrame = footCycleRef.current;
+        }
+      } else {
+        bobTimerRef.current = 0;
+      }
+
       let nextGridX = player.pos.x;
       let nextGridY = player.pos.y;
       let newDir = player.dir;
@@ -169,6 +182,14 @@ export function useGameEngine() {
         );
 
         if (canMove && !collidingNPC) {
+          // Reset bob timer when starting a move
+          bobTimerRef.current = 0;
+          
+          // Toggle foot cycle for every step taken
+          footCycleRef.current = footCycleRef.current === 1 ? 2 : 1;
+          player.walkFrame = footCycleRef.current;
+          lastStepDirRef.current = newDir;
+
           player.isMoving = true;
           player.isSurfing = enteringWater;
           moveTimerRef.current = 0;

@@ -7,9 +7,38 @@ export const drawPixelSprite = (
   color: string, 
   dir: Direction, 
   walkFrame: number = 0, 
-  isSurfing: boolean = false
+  isSurfing: boolean = false,
+  playerImages?: Record<string, HTMLImageElement>
 ) => {
-  // Body bobbing
+  // If we have images, use them first
+  if (playerImages) {
+    let spriteKey: string;
+    
+    if (isSurfing) {
+      // Surfing has no neutral, uses 1 or 2
+      const frame = walkFrame === 0 ? 1 : walkFrame; // Default to 1 if 0
+      spriteKey = `surf-${dir}-${frame}`;
+    } else {
+      spriteKey = `neutral-${dir}`;
+      if (walkFrame === 1) spriteKey = `walking-${dir}-1`;
+      else if (walkFrame === 2) spriteKey = `walking-${dir}-2`;
+    }
+    
+    // Enlarge walking player sprite
+    const img = playerImages[spriteKey];
+    if (img) {
+      ctx.imageSmoothingEnabled = false;
+      const baseScale = 1.75;
+      const scale = isSurfing ? baseScale * 1.25 : baseScale;
+      const size = 32 * scale;
+      const offset = (size - 32) / 2;
+      const yOffset = offset + 4; // Shift up by 4 pixels
+      ctx.drawImage(img, x - offset, y - yOffset, size, size);
+      return;
+    }
+  }
+
+  // Fallback to procedural sprites
   const bob = walkFrame % 2 === 1 ? -2 : 0;
 
   if (isSurfing) {
@@ -71,7 +100,7 @@ export const drawPixelSprite = (
     // Left foot up
     ctx.fillRect(x + 6, y + 26 + bob, 8, 4); 
     ctx.fillRect(x + 18, y + 29 + bob, 8, 4);
-  } else if (walkFrame === 3) {
+  } else if (walkFrame === 2) {
     // Right foot up
     ctx.fillRect(x + 6, y + 29 + bob, 8, 4);
     ctx.fillRect(x + 18, y + 26 + bob, 8, 4);

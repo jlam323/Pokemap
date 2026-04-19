@@ -12,6 +12,7 @@ export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const playerImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [overlayMode, setOverlayMode] = useState<'none' | 'gbc' | 'gba'>('gbc');
   const [displayedOverlayMode, setDisplayedOverlayMode] = useState(overlayMode);
@@ -50,6 +51,26 @@ export default function GameCanvas() {
     img.onerror = () => {
       console.warn('Map image failed to load, using fallback environment');
     };
+
+    // Load player sprites
+    const playerSprites = [
+      'neutral-down', 'neutral-up', 'neutral-left', 'neutral-right',
+      'walking-down-1', 'walking-down-2',
+      'walking-up-1', 'walking-up-2',
+      'walking-left-1', 'walking-left-2',
+      'walking-right-1', 'walking-right-2',
+      'surf-down-1', 'surf-down-2',
+      'surf-up-1', 'surf-up-2',
+      'surf-left-1', 'surf-left-2',
+      'surf-right-1', 'surf-right-2'
+    ];
+    playerSprites.forEach(s => {
+      const pImg = new Image();
+      pImg.src = `${base}/player/${s}.png`;
+      pImg.onload = () => {
+        playerImagesRef.current[s] = pImg;
+      };
+    });
 
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current.add(e.key.toLowerCase());
@@ -194,7 +215,7 @@ export default function GameCanvas() {
       drawPixelSprite(ctx, npc.pos.x, npc.pos.y, npc.spriteIndex === 1 ? '#339af0' : '#f06595', npc.dir, npc.walkFrame, npc.isSurfing);
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, '#fab005', player.dir, player.walkFrame, player.isSurfing);
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, '#fab005', player.dir, player.walkFrame, player.isSurfing, playerImagesRef.current);
     
     const nearbyNPC = currentState.npcs.find(npc => {
         const dx = Math.abs(npc.pos.x - player.pos.x);
