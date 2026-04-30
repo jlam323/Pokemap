@@ -89,7 +89,7 @@ export function NoOverlay({
       </div>
 
       {/* Desktop Keyboard Hints */}
-      <div className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 items-center gap-6 px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl opacity-60 hover:opacity-100 transition-all duration-300 z-10 shadow-2xl group">
+      <div className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 items-center gap-6 px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl opacity-60 hover:opacity-100 transition-all duration-300 z-10 shadow-2xl group pointer-events-auto">
         <div className="flex flex-col items-center gap-1">
           <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">W</kbd>
           <div className="flex gap-1">
