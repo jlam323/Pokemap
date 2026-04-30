@@ -1,56 +1,16 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Entity, GameState, Position, Direction } from '../types';
 import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, MOVE_DURATION } from '../constants';
+import { INITIAL_NPCS } from '../data/npcs';
+import { INITIAL_PLAYER } from '../data/player';
 import mapTileGrid from '../data/map_tile_grid.json';
 
-const INITIAL_PLAYER: Entity = {
-  id: 'player',
-  type: 'player',
-  pos: { x: TILE_SIZE * 24, y: TILE_SIZE * 31 },
-  dir: 'down',
-  spriteIndex: 0,
-  isMoving: false,
-  walkFrame: 0,
-};
-
-const INITIAL_NPCS: Entity[] = [
-  {
-    id: 'npc1',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 28, y: TILE_SIZE * 20 },
-    dir: 'left',
-    spriteIndex: 1,
-    spriteName: 'oak',
-    name: 'Professor Oak',
-    movementType: 'random',
-    movementTimer: Math.random() * 5000, // Stagger movements
-    dialogue: [
-      "This world is inhabited by creatures called Pokémon",
-      "Hey! Wait! Don't go out! It's unsafe! Wild Pokémon live in tall grass!",
-      "...Erm, what was my grandson's name now?"
-    ]
-  },
-  {
-    id: 'npc2',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 22, y: TILE_SIZE * 25 },
-    dir: 'right',
-    spriteIndex: 2,
-    name: 'Nurse Joy',
-    movementType: 'stationary',
-    dialogue: [
-      "You look a bit lost.",
-      "Are you enjoying the view?",
-      "Be sure to stay on the paths!"
-    ]
-  }
-];
-
-export function useGameEngine() {
+export function GameEngine() {
   const [gameState, setGameState] = useState<GameState>({
     player: INITIAL_PLAYER,
     npcs: INITIAL_NPCS,
     isTalking: false,
+    talkingNPCId: null,
     activeDialogue: null,
     dialogueIndex: 0,
   });
@@ -61,7 +21,6 @@ export function useGameEngine() {
   const keysPressed = useRef<Set<string>>(new Set());
   const moveTimerRef = useRef<number>(0);
   const bobTimerRef = useRef<number>(0);
-  const lastStepDirRef = useRef<Direction | null>(null);
   const footCycleRef = useRef<number>(1);
   const startPosRef = useRef<Position>(INITIAL_PLAYER.pos);
   const targetPosRef = useRef<Position>(INITIAL_PLAYER.pos);
@@ -76,7 +35,7 @@ export function useGameEngine() {
       if (prev.dialogueIndex < prev.activeDialogue.length - 1) {
         return { ...prev, dialogueIndex: prev.dialogueIndex + 1 };
       } else {
-        return { ...prev, isTalking: false, activeDialogue: null, dialogueIndex: 0 };
+        return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0 };
       }
     });
   }, []);
@@ -109,27 +68,40 @@ export function useGameEngine() {
         newDir = dy > 0 ? 'down' : 'up';
       }
 
+      // Update ref immediately for the renderer
+      npcsRef.current[nearbyNPCIndex].dir = newDir;
+
+      const dialogueGroups = nearbyNPC.dialogue || [];
+      const groupIndex = nearbyNPC.dialogueGroupIndex || 0;
+      const currentDialogueGroup = dialogueGroups[groupIndex % dialogueGroups.length] || [];
+
       setGameState(prev => {
         const newNpcs = [...prev.npcs];
-        newNpcs[nearbyNPCIndex] = { ...newNpcs[nearbyNPCIndex], dir: newDir };
+        // Increment dialogue group for next time
+        newNpcs[nearbyNPCIndex] = { 
+          ...newNpcs[nearbyNPCIndex], 
+          dir: newDir,
+          dialogueGroupIndex: (groupIndex + 1) % dialogueGroups.length
+        };
+        // Also update the ref for persistence across renders
+        npcsRef.current[nearbyNPCIndex].dialogueGroupIndex = newNpcs[nearbyNPCIndex].dialogueGroupIndex;
+
         return {
           ...prev,
           npcs: newNpcs,
           isTalking: true,
-          activeDialogue: nearbyNPC.dialogue!,
+          talkingNPCId: nearbyNPC.id,
+          activeDialogue: currentDialogueGroup,
           dialogueIndex: 0
         };
       });
     }
   }, [nextDialogue]);
 
-  const update = useCallback((dt: number) => {
-    const currentState = stateRef.current;
-    
-    // NPC updates - mutation of ref for performance
+  const updateNPCs = useCallback((dt: number, isTalking: boolean) => {
     npcsRef.current.forEach(npc => {
       // Don't move if talking
-      if (currentState.isTalking) return;
+      if (isTalking) return;
 
       if (npc.isMoving) {
         npc.moveProgress = (npc.moveProgress || 0) + dt / MOVE_DURATION;
@@ -185,9 +157,11 @@ export function useGameEngine() {
         }
       }
     });
+  }, []);
 
+  const updatePlayer = useCallback((dt: number, isTalking: boolean, currentState: GameState) => {
     const player = playerRef.current;
-    if (currentState.isTalking) return;
+    if (isTalking) return;
 
     if (player.isMoving) {
       moveTimerRef.current += dt;
@@ -271,7 +245,6 @@ export function useGameEngine() {
           // Toggle foot cycle for every step taken
           footCycleRef.current = footCycleRef.current === 1 ? 2 : 1;
           player.walkFrame = footCycleRef.current;
-          lastStepDirRef.current = newDir;
 
           player.isMoving = true;
           player.isSurfing = enteringWater;
@@ -282,6 +255,37 @@ export function useGameEngine() {
       }
     }
   }, []);
+
+  const update = useCallback((dt: number) => {
+    const currentState = stateRef.current;
+    updateNPCs(dt, currentState.isTalking);
+    updatePlayer(dt, currentState.isTalking, currentState);
+  }, [updateNPCs, updatePlayer]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keysPressed.current.add(e.key.toLowerCase());
+      if (e.key === ' ' || e.key === 'Enter') {
+        handleInteraction();
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keysPressed.current.delete(e.key.toLowerCase());
+    };
+    const handleBlur = () => {
+      keysPressed.current.clear();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [handleInteraction]);
 
   return {
     gameState,

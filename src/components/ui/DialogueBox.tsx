@@ -22,7 +22,7 @@ export const DialogueBox = ({
   >
     <div className="flex-1">
       <p className="text-[10px] font-bold mb-1 text-gray-500">
-          {gameState.npcs.find(n => n.dialogue === gameState.activeDialogue)?.name || 'NPC'}
+          {gameState.npcs.find(n => n.id === gameState.talkingNPCId)?.name || 'NPC'}
       </p>
       <p className={`${fontSize} leading-tight text-black`}>
           {gameState.activeDialogue?.[gameState.dialogueIndex]}

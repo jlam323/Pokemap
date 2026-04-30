@@ -15,7 +15,8 @@ export interface Entity {
   isMoving?: boolean;
   isSurfing?: boolean;
   walkFrame?: number;
-  dialogue?: string[];
+  dialogue?: string[][];
+  dialogueGroupIndex?: number;
   name?: string;
   spriteName?: string;
   movementType?: 'stationary' | 'random';
@@ -29,6 +30,7 @@ export interface GameState {
   player: Entity;
   npcs: Entity[];
   isTalking: boolean;
+  talkingNPCId: string | null;
   activeDialogue: string[] | null;
   dialogueIndex: number;
 }

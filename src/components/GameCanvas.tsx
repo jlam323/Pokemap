@@ -1,26 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
-import { useGameEngine } from '../hooks/useGameEngine';
+import { GameEngine } from './GameEngine';
 import { DialogueBox } from './ui/DialogueBox';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
 import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from '../constants';
-import { drawPixelSprite, drawTree } from '../lib/renderer';
+import { NPC_SPRITE_CONFIGS } from '../data/npcs';
+import { PLAYER_SPRITE_CONFIG } from '../data/player';
+import { useAssets } from '../hooks/useAssets';
+import { drawPixelSprite } from './SpriteRenderer';
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapImageRef = useRef<HTMLImageElement | null>(null);
-  const playerImagesRef = useRef<Record<string, HTMLImageElement>>({});
-  const npcImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [overlayMode, setOverlayMode] = useState<'none' | 'gbc' | 'gba'>('gbc');
   const [displayedOverlayMode, setDisplayedOverlayMode] = useState(overlayMode);
-  const overlayModeRef = useRef(overlayMode);
   const displayedOverlayRef = useRef(displayedOverlayMode);
   const dimensionsRef = useRef(dimensions);
   const lastTimeRef = useRef<number>(0);
+
+  const { isLoaded, playerImages, npcImages, mapImage } = useAssets();
 
   const {
     gameState,
@@ -30,77 +31,13 @@ export default function GameCanvas() {
     keysPressed,
     update,
     handleInteraction
-  } = useGameEngine();
-
-  useEffect(() => {
-    overlayModeRef.current = overlayMode;
-  }, [overlayMode]);
+  } = GameEngine();
 
   useEffect(() => {
     displayedOverlayRef.current = displayedOverlayMode;
   }, [displayedOverlayMode]);
 
   useEffect(() => {
-    // Load map image
-    const img = new Image();
-    // Resolve path dynamically based on Vite's base
-    const base = import.meta.env.BASE_URL.replace(/\/$/, '') || '.';
-    img.src = `${base}/cerulean-city-map.png`;
-    img.onload = () => {
-      console.log('Map image loaded successfully');
-      mapImageRef.current = img;
-    };
-    img.onerror = () => {
-      console.warn('Map image failed to load, using fallback environment');
-    };
-
-    // Load player sprites
-    const playerSprites = [
-      'neutral-down', 'neutral-up', 'neutral-left', 'neutral-right',
-      'walking-down-1', 'walking-down-2',
-      'walking-up-1', 'walking-up-2',
-      'walking-left-1', 'walking-left-2',
-      'walking-right-1', 'walking-right-2',
-      'surf-down-1', 'surf-down-2',
-      'surf-up-1', 'surf-up-2',
-      'surf-left-1', 'surf-left-2',
-      'surf-right-1', 'surf-right-2'
-    ];
-    playerSprites.forEach(s => {
-      const pImg = new Image();
-      pImg.src = `${base}/player/${s}.png`;
-      pImg.onload = () => {
-        playerImagesRef.current[s] = pImg;
-      };
-    });
-    
-    // Load NPC sprites (Oak)
-    const oakSprites = [
-      'oak-neutral-down', 'oak-neutral-up', 'oak-neutral-left', 'oak-neutral-right',
-      'oak-walk-down', 'oak-walk-up', 'oak-walk-left', 'oak-walk-right'
-    ];
-    if (!npcImagesRef.current['oak']) npcImagesRef.current['oak'] = {};
-    oakSprites.forEach(s => {
-      const nImg = new Image();
-      nImg.src = `${base}/npc/oak/${s}.png`;
-      nImg.onload = () => {
-        npcImagesRef.current['oak'][s] = nImg;
-      };
-    });
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keysPressed.current.add(e.key.toLowerCase());
-      if (e.key === ' ' || e.key === 'Enter') {
-        handleInteraction();
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keysPressed.current.delete(e.key.toLowerCase());
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
     let observedElement: HTMLElement | null = null;
     let observer: ResizeObserver | null = null;
     let frameId: number;
@@ -148,12 +85,10 @@ export default function GameCanvas() {
     checkMeasure();
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
       if (observer) observer.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, [handleInteraction, keysPressed, overlayMode]);
+  }, [overlayMode]);
 
   const draw = (ctx: CanvasRenderingContext2D) => {
     const { width, height } = dimensionsRef.current;
@@ -179,11 +114,13 @@ export default function GameCanvas() {
     }
 
     // Quantize scale to nearest 0.25 to avoid messy sub-pixel boundaries
-    // This is the primary cause of stuttering on overlays
+    // We also round the dimensions to ensure logicalWidth/Height calculation is stable
+    const canvasWidth = Math.round(width);
+    const canvasHeight = Math.round(height);
     const scale = isNone ? targetScale : Math.round(targetScale * 4) / 4;
 
-    const logicalWidth = width / scale;
-    const logicalHeight = height / scale;
+    const logicalWidth = canvasWidth / scale;
+    const logicalHeight = canvasHeight / scale;
     const currentState = stateRef.current;
     
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -192,56 +129,41 @@ export default function GameCanvas() {
 
     const player = playerRef.current;
     // We calculate the raw camera position
-    let cameraX = player.pos.x + TILE_SIZE / 2 - logicalWidth / 2;
-    let cameraY = player.pos.y + TILE_SIZE / 2 - logicalHeight / 2;
+    let targetCameraX = player.pos.x + TILE_SIZE / 2 - logicalWidth / 2;
+    let targetCameraY = player.pos.y + TILE_SIZE / 2 - logicalHeight / 2;
 
-    cameraX = Math.max(0, Math.min(cameraX, Math.max(0, totalMapWidth - logicalWidth)));
-    cameraY = Math.max(0, Math.min(cameraY, Math.max(0, totalMapHeight - logicalHeight)));
+    targetCameraX = Math.max(0, Math.min(targetCameraX, Math.max(0, totalMapWidth - logicalWidth)));
+    targetCameraY = Math.max(0, Math.min(targetCameraY, Math.max(0, totalMapHeight - logicalHeight)));
 
     const offsetX = logicalWidth > totalMapWidth ? (logicalWidth - totalMapWidth) / 2 : 0;
     const offsetY = logicalHeight > totalMapHeight ? (logicalHeight - totalMapHeight) / 2 : 0;
 
     ctx.save();
     
-    // Calculate physical offset and then snap to integer pixels
-    // Rounding here ensures the entire viewport stays "on the grid"
+    // Snap camera to the nearest logical pixel that corresponds to a physical pixel
+    // This prevents "shimmering" or "seams" between tiles
+    const cameraX = Math.round((targetCameraX - offsetX) * scale) / scale;
+    const cameraY = Math.round((targetCameraY - offsetY) * scale) / scale;
+
     const physicalX = Math.round((offsetX - cameraX) * scale);
     const physicalY = Math.round((offsetY - cameraY) * scale);
     
     ctx.translate(physicalX, physicalY);
     ctx.scale(scale, scale);
 
-    if (mapImageRef.current) {
-        ctx.drawImage(mapImageRef.current, 0, 0, totalMapWidth, totalMapHeight);
+    if (mapImage) {
+        ctx.drawImage(mapImage, 0, 0, totalMapWidth, totalMapHeight);
     } else {
-        ctx.fillStyle = '#7ac74c';
+        ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, totalMapWidth, totalMapHeight);
-        ctx.fillStyle = '#6ab73c';
-        for(let i=0; i<MAP_WIDTH; i+=2) {
-            for(let j=0; j<MAP_HEIGHT; j+=2) {
-                if((i+j)%3 === 0) ctx.fillRect(i*TILE_SIZE + 10, j*TILE_SIZE + 10, 2, 2);
-            }
-        }
-        ctx.fillStyle = '#e0d1a4';
-        ctx.fillRect(TILE_SIZE * 24, 0, TILE_SIZE * 3, MAP_HEIGHT * TILE_SIZE);
-        ctx.fillRect(0, TILE_SIZE * 20, MAP_WIDTH * TILE_SIZE, TILE_SIZE * 3);
-        for(let i=0; i<MAP_WIDTH; i+=4) {
-            drawTree(ctx, i * TILE_SIZE, 0);
-            drawTree(ctx, i * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE);
-        }
-        for(let j=0; j<MAP_HEIGHT; j+=4) {
-            drawTree(ctx, 0, j * TILE_SIZE);
-            drawTree(ctx, (MAP_WIDTH - 1) * TILE_SIZE, j * TILE_SIZE);
-        }
     }
 
     npcsRef.current.forEach(npc => {
-      const images = npc.spriteName ? npcImagesRef.current[npc.spriteName] : undefined;
+      const images = npc.spriteName ? npcImages[npc.spriteName] : undefined;
       drawPixelSprite(
         ctx, 
         npc.pos.x, 
         npc.pos.y, 
-        npc.spriteIndex === 1 ? '#339af0' : '#f06595', 
         npc.dir, 
         npc.walkFrame || 0, 
         npc.isSurfing || false, 
@@ -250,7 +172,7 @@ export default function GameCanvas() {
       );
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, '#fab005', player.dir, player.walkFrame, player.isSurfing, playerImagesRef.current);
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages);
     
     const nearbyNPC = currentState.npcs.find(npc => {
         const dx = Math.abs(npc.pos.x - player.pos.x);
@@ -292,7 +214,7 @@ export default function GameCanvas() {
   useEffect(() => {
     const frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
-  }, [update]);
+  }, [update, isLoaded]); // Re-start loop when loaded
 
   const renderCanvas = () => (
     <canvas
@@ -303,6 +225,12 @@ export default function GameCanvas() {
       className="image-rendering-pixelated block w-full h-full outline-none"
       style={{ imageRendering: 'pixelated' }}
     />
+  );
+
+  if (!isLoaded) return (
+    <div className="fixed inset-0 bg-black flex items-center justify-center text-white text-[10px] tracking-[4px]">
+      LOADING ASSETS...
+    </div>
   );
 
   return (

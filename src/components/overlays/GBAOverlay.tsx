@@ -42,7 +42,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
       initial="hidden"
       animate="show"
       variants={containerVariants}
-      className="relative w-[75vw] max-w-[1000px] max-h-[80vh] aspect-[1.6/1] flex items-center justify-center p-4 transition-all duration-700"
+      className="relative w-[75vw] max-w-[1200px] aspect-[1.6/1] flex items-center justify-center p-4 transition-all duration-700"
       style={{
         filter: 'drop-shadow(20px 20px 0px rgba(0,0,0,0.2))'
       }}
