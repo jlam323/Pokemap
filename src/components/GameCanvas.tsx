@@ -13,6 +13,7 @@ export default function GameCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
   const playerImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const npcImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [overlayMode, setOverlayMode] = useState<'none' | 'gbc' | 'gba'>('gbc');
   const [displayedOverlayMode, setDisplayedOverlayMode] = useState(overlayMode);
@@ -24,6 +25,7 @@ export default function GameCanvas() {
   const {
     gameState,
     playerRef,
+    npcsRef,
     stateRef,
     keysPressed,
     update,
@@ -69,6 +71,20 @@ export default function GameCanvas() {
       pImg.src = `${base}/player/${s}.png`;
       pImg.onload = () => {
         playerImagesRef.current[s] = pImg;
+      };
+    });
+    
+    // Load NPC sprites (Oak)
+    const oakSprites = [
+      'oak-neutral-down', 'oak-neutral-up', 'oak-neutral-left', 'oak-neutral-right',
+      'oak-walk-down', 'oak-walk-up', 'oak-walk-left', 'oak-walk-right'
+    ];
+    if (!npcImagesRef.current['oak']) npcImagesRef.current['oak'] = {};
+    oakSprites.forEach(s => {
+      const nImg = new Image();
+      nImg.src = `${base}/npc/oak/${s}.png`;
+      nImg.onload = () => {
+        npcImagesRef.current['oak'][s] = nImg;
       };
     });
 
@@ -155,12 +171,16 @@ export default function GameCanvas() {
     const maxVisibleTiles = isNone ? 80 : (isGBC ? 16 : 38); 
     const baseVisibleTiles = width / TILE_SIZE;
 
-    let scale = 1;
+    let targetScale = 1;
     if (baseVisibleTiles < minVisibleTiles) {
-      scale = width / (minVisibleTiles * TILE_SIZE);
+      targetScale = width / (minVisibleTiles * TILE_SIZE);
     } else if (baseVisibleTiles > maxVisibleTiles) {
-      scale = width / (maxVisibleTiles * TILE_SIZE);
+      targetScale = width / (maxVisibleTiles * TILE_SIZE);
     }
+
+    // Quantize scale to nearest 0.25 to avoid messy sub-pixel boundaries
+    // This is the primary cause of stuttering on overlays
+    const scale = isNone ? targetScale : Math.round(targetScale * 4) / 4;
 
     const logicalWidth = width / scale;
     const logicalHeight = height / scale;
@@ -171,6 +191,7 @@ export default function GameCanvas() {
     ctx.scale(dpr, dpr);
 
     const player = playerRef.current;
+    // We calculate the raw camera position
     let cameraX = player.pos.x + TILE_SIZE / 2 - logicalWidth / 2;
     let cameraY = player.pos.y + TILE_SIZE / 2 - logicalHeight / 2;
 
@@ -181,6 +202,9 @@ export default function GameCanvas() {
     const offsetY = logicalHeight > totalMapHeight ? (logicalHeight - totalMapHeight) / 2 : 0;
 
     ctx.save();
+    
+    // Calculate physical offset and then snap to integer pixels
+    // Rounding here ensures the entire viewport stays "on the grid"
     const physicalX = Math.round((offsetX - cameraX) * scale);
     const physicalY = Math.round((offsetY - cameraY) * scale);
     
@@ -211,8 +235,19 @@ export default function GameCanvas() {
         }
     }
 
-    currentState.npcs.forEach(npc => {
-      drawPixelSprite(ctx, npc.pos.x, npc.pos.y, npc.spriteIndex === 1 ? '#339af0' : '#f06595', npc.dir, npc.walkFrame, npc.isSurfing);
+    npcsRef.current.forEach(npc => {
+      const images = npc.spriteName ? npcImagesRef.current[npc.spriteName] : undefined;
+      drawPixelSprite(
+        ctx, 
+        npc.pos.x, 
+        npc.pos.y, 
+        npc.spriteIndex === 1 ? '#339af0' : '#f06595', 
+        npc.dir, 
+        npc.walkFrame || 0, 
+        npc.isSurfing || false, 
+        images,
+        npc.spriteName
+      );
     });
 
     drawPixelSprite(ctx, player.pos.x, player.pos.y, '#fab005', player.dir, player.walkFrame, player.isSurfing, playerImagesRef.current);

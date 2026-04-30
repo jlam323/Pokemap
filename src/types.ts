@@ -17,6 +17,12 @@ export interface Entity {
   walkFrame?: number;
   dialogue?: string[];
   name?: string;
+  spriteName?: string;
+  movementType?: 'stationary' | 'random';
+  movementTimer?: number;
+  startPos?: Position;
+  targetPos?: Position;
+  moveProgress?: number;
 }
 
 export interface GameState {
