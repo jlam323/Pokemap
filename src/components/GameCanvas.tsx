@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { GameEngine } from './GameEngine';
-import { DialogueBox } from './ui/DialogueBox';
+import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
 import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from '../constants';
@@ -30,7 +30,9 @@ export default function GameCanvas() {
     stateRef,
     keysPressed,
     update,
-    handleInteraction
+    handleInteraction,
+    handleArrowDown,
+    handleArrowUp
   } = GameEngine();
 
   useEffect(() => {
@@ -102,8 +104,9 @@ export default function GameCanvas() {
 
     const isGBC = currentOverlay === 'gbc';
     const isGBA = currentOverlay === 'gba';
-    const minVisibleTiles = isNone ? 50 : (isGBC ? 16 : 22); 
-    const maxVisibleTiles = isNone ? 80 : (isGBC ? 16 : 38); 
+    const isMobile = width < 768;
+    const minVisibleTiles = isNone ? (isMobile ? 20 : 50) : (isGBC ? 16 : 22); 
+    const maxVisibleTiles = isNone ? (isMobile ? 35 : 80) : (isGBC ? 16 : 38); 
     const baseVisibleTiles = width / TILE_SIZE;
 
     let targetScale = 1;
@@ -239,24 +242,22 @@ export default function GameCanvas() {
       {/* Home Button - Always Visible */}
       <a 
         href="https://jonalam.com" 
-        className="fixed top-8 left-8 z-[110] flex items-center gap-3 px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all group shadow-2xl pointer-events-auto"
+        className="fixed top-4 left-4 md:top-8 md:left-8 z-[110] flex items-center gap-2 md:gap-3 px-3 py-2 md:px-6 md:py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all group shadow-2xl pointer-events-auto"
       >
-        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span className="text-[10px] font-black tracking-[3px] uppercase">jonalam.com</span>
+        <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 group-hover:-translate-x-1 transition-transform" />
+        <span className="hidden sm:inline text-[9px] md:text-[10px] font-black tracking-[2px] md:tracking-[3px] uppercase">jonalam.com</span>
       </a>
 
       {/* Mode Toggle Overlay - Always Visible */}
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 flex gap-1 z-[100] pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl">
+      <div className="fixed top-4 md:top-8 left-1/2 -translate-x-1/2 flex gap-1 z-[100] pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 p-1 rounded-md md:p-1.5 md:rounded-full shadow-2xl">
         {(['none', 'gbc', 'gba'] as const).map(mode => (
           <button
             key={mode}
             onClick={() => {
               if (mode === overlayMode) return;
-              // If we are coming from 'none', we might want a slightly faster sync?
-              // Actually keeping it consistent is cleaner.
               setOverlayMode(mode);
             }}
-            className={`px-6 py-2 text-[9px] font-black tracking-[3px] rounded-full transition-all duration-300 ${
+            className={`px-3 py-1.5 md:px-6 md:py-2 text-[8px] md:text-[9px] font-black tracking-[1px] md:tracking-[3px] rounded-sm md:rounded-full transition-all duration-300 ${
               overlayMode === mode 
                 ? 'bg-white text-black shadow-[0_4px_12px_rgba(0,0,0,0.5)] scale-105' 
                 : 'text-white/40 hover:text-white/80 hover:bg-white/5'
@@ -279,26 +280,12 @@ export default function GameCanvas() {
             className="fixed inset-0 bg-black z-0"
           >
             {renderCanvas()}
-            <AnimatePresence>
-              {gameState.isTalking && gameState.activeDialogue && (
-                <DialogueBox gameState={gameState} isFullScreen />
-              )}
-            </AnimatePresence>
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl opacity-60 hover:opacity-100 transition-all duration-300 z-10 shadow-2xl group">
-                <div className="flex flex-col items-center gap-1">
-                    <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">W</kbd>
-                    <div className="flex gap-1">
-                        <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">A</kbd>
-                        <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">S</kbd>
-                        <kbd className="px-2 py-1 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black min-w-[30px] flex items-center justify-center">D</kbd>
-                    </div>
-                </div>
-                <div className="h-12 w-[1px] bg-white opacity-20" />
-                <div className="flex flex-col items-center gap-2">
-                    <kbd className="px-6 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest">SPACE</kbd>
-                    <span className="text-[8px] text-white/40 font-bold tracking-[2px]">TALK</span>
-                </div>
-            </div>
+            <NoOverlay 
+              gameState={gameState}
+              handleInteraction={handleInteraction}
+              handleArrowDown={handleArrowDown}
+              handleArrowUp={handleArrowUp}
+            />
           </motion.div>
         )}
 

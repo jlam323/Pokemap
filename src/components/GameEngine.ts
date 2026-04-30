@@ -314,6 +314,26 @@ export function GameEngine() {
     };
   }, [handleInteraction]);
 
+  const handleArrowDown = useCallback((dir: Direction) => {
+    const keyMap: Record<Direction, string> = {
+      up: 'arrowup',
+      down: 'arrowdown',
+      left: 'arrowleft',
+      right: 'arrowright'
+    };
+    keysPressed.current.add(keyMap[dir]);
+  }, []);
+
+  const handleArrowUp = useCallback((dir: Direction) => {
+    const keyMap: Record<Direction, string> = {
+      up: 'arrowup',
+      down: 'arrowdown',
+      left: 'arrowleft',
+      right: 'arrowright'
+    };
+    keysPressed.current.delete(keyMap[dir]);
+  }, []);
+
   return {
     gameState,
     setGameState,
@@ -322,6 +342,8 @@ export function GameEngine() {
     stateRef,
     keysPressed,
     update,
-    handleInteraction
+    handleInteraction,
+    handleArrowDown,
+    handleArrowUp
   };
 }
