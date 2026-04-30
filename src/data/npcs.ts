@@ -34,7 +34,7 @@ export const INITIAL_NPCS: Entity[] = [
   {
     id: 'npc1',
     type: 'npc',
-    pos: { x: TILE_SIZE * 28, y: TILE_SIZE * 20 },
+    pos: { x: TILE_SIZE * 22, y: TILE_SIZE * 27 },
     dir: 'down',
     spriteIndex: 1,
     spriteName: 'oak',
@@ -51,7 +51,7 @@ export const INITIAL_NPCS: Entity[] = [
   {
     id: 'npc2',
     type: 'npc',
-    pos: { x: TILE_SIZE * 22, y: TILE_SIZE * 25 },
+    pos: { x: TILE_SIZE * 27, y: TILE_SIZE * 33 },
     dir: 'down',
     spriteIndex: 2,
     spriteName: 'brock',

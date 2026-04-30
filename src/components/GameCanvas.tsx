@@ -168,11 +168,12 @@ export default function GameCanvas() {
         npc.walkFrame || 0, 
         npc.isSurfing || false, 
         images,
-        npc.spriteName
+        npc.spriteName,
+        npc.bumpOffset
       );
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages);
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset);
     
     const nearbyNPC = currentState.npcs.find(npc => {
         const dx = Math.abs(npc.pos.x - player.pos.x);

@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Entity, GameState, Position, Direction } from '../types';
-import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, MOVE_DURATION } from '../constants';
+import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
 import { INITIAL_NPCS } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
 import mapTileGrid from '../data/map_tile_grid.json';
@@ -24,6 +24,8 @@ export function GameEngine() {
   const footCycleRef = useRef<number>(1);
   const startPosRef = useRef<Position>(INITIAL_PLAYER.pos);
   const targetPosRef = useRef<Position>(INITIAL_PLAYER.pos);
+  const bumpTimerRef = useRef<number>(0);
+  const isBumpingRef = useRef<boolean>(false);
 
   useEffect(() => {
     stateRef.current = gameState;
@@ -163,6 +165,27 @@ export function GameEngine() {
     const player = playerRef.current;
     if (isTalking) return;
 
+    if (isBumpingRef.current) {
+      bumpTimerRef.current += dt;
+      const progress = Math.min(bumpTimerRef.current / BUMP_DURATION, 1);
+      
+      // Sine wave for the bump: 0 -> max -> 0
+      const offset = Math.sin(progress * Math.PI) * BUMP_DISTANCE;
+      
+      if (!player.bumpOffset) player.bumpOffset = { x: 0, y: 0 };
+      
+      if (player.dir === 'up') player.bumpOffset = { x: 0, y: -offset };
+      else if (player.dir === 'down') player.bumpOffset = { x: 0, y: offset };
+      else if (player.dir === 'left') player.bumpOffset = { x: -offset, y: 0 };
+      else if (player.dir === 'right') player.bumpOffset = { x: offset, y: 0 };
+
+      if (progress >= 1) {
+        isBumpingRef.current = false;
+        player.bumpOffset = { x: 0, y: 0 };
+      }
+      return;
+    }
+
     if (player.isMoving) {
       moveTimerRef.current += dt;
       const progress = Math.min(moveTimerRef.current / MOVE_DURATION, 1);
@@ -251,6 +274,10 @@ export function GameEngine() {
           moveTimerRef.current = 0;
           startPosRef.current = { ...player.pos };
           targetPosRef.current = { x: nextGridX, y: nextGridY };
+        } else {
+          // Trigger bump animation
+          isBumpingRef.current = true;
+          bumpTimerRef.current = 0;
         }
       }
     }

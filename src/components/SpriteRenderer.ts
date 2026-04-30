@@ -10,10 +10,11 @@ export const drawPixelSprite = (
   walkFrame: number = 0, 
   isSurfing: boolean = false,
   images?: Record<string, HTMLImageElement>,
-  spriteName?: string
+  spriteName?: string,
+  bumpOffset?: { x: number, y: number }
  ) => {
-  const x = Math.round(rawX);
-  const y = Math.round(rawY);
+  const x = Math.round(rawX + (bumpOffset?.x || 0));
+  const y = Math.round(rawY + (bumpOffset?.y || 0));
   // If we have images, use them first
   if (images) {
     const baseScale = spriteName ? (NPC_SPRITE_CONFIGS[spriteName]?.scale || DEFAULT_NPC_SCALE) : PLAYER_SCALE;

@@ -24,6 +24,7 @@ export interface Entity {
   startPos?: Position;
   targetPos?: Position;
   moveProgress?: number;
+  bumpOffset?: Position;
 }
 
 export interface GameState {
