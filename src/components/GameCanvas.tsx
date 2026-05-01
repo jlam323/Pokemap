@@ -179,9 +179,19 @@ export default function GameCanvas() {
     drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset);
     
     const nearbyNPC = currentState.npcs.find(npc => {
-        const dx = Math.abs(npc.pos.x - player.pos.x);
-        const dy = Math.abs(npc.pos.y - player.pos.y);
-        return dx <= TILE_SIZE * 1.5 && dy <= TILE_SIZE * 1.5;
+        let targetX = player.pos.x;
+        let targetY = player.pos.y;
+        
+        if (player.dir === 'up') targetY -= TILE_SIZE;
+        else if (player.dir === 'down') targetY += TILE_SIZE;
+        else if (player.dir === 'left') targetX -= TILE_SIZE;
+        else if (player.dir === 'right') targetX += TILE_SIZE;
+
+        const nx = Math.round(npc.pos.x);
+        const ny = Math.round(npc.pos.y);
+        const tx = Math.round(targetX);
+        const ty = Math.round(targetY);
+        return nx === tx && ny === ty;
     });
 
     if (nearbyNPC && !currentState.isTalking) {

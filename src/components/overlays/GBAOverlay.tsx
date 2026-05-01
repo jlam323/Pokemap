@@ -185,7 +185,7 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
             {children}
             <AnimatePresence mode="wait">
               {gameState.isTalking && gameState.activeDialogue && (
-                <DialogueBox gameState={gameState} fontSize="text-[1.2vh]" />
+                <DialogueBox gameState={gameState} fontSize="text-[1.2vh]" className="pl-[2.5vh] pr-[4.5vh] pt-[1.5vh] pb-[2vh]" />
               )}
             </AnimatePresence>
           </div>

@@ -18,6 +18,17 @@ export function GameEngine() {
   const playerRef = useRef<Entity>(INITIAL_PLAYER);
   const npcsRef = useRef<Entity[]>(INITIAL_NPCS);
   const stateRef = useRef<GameState>(gameState);
+  const collisionMapRef = useRef<Set<string>>(new Set());
+
+  // Initialize collision map with starting positions
+  useEffect(() => {
+    const map = new Set<string>();
+    map.add(`${INITIAL_PLAYER.pos.x},${INITIAL_PLAYER.pos.y}`);
+    INITIAL_NPCS.forEach(npc => {
+      map.add(`${npc.pos.x},${npc.pos.y}`);
+    });
+    collisionMapRef.current = map;
+  }, []);
   const keysPressed = useRef<Set<string>>(new Set());
   const moveTimerRef = useRef<number>(0);
   const bobTimerRef = useRef<number>(0);
@@ -50,10 +61,23 @@ export function GameEngine() {
     }
 
     const player = playerRef.current;
+    
+    // Calculate target position in front of player
+    let targetX = player.pos.x;
+    let targetY = player.pos.y;
+    
+    if (player.dir === 'up') targetY -= TILE_SIZE;
+    else if (player.dir === 'down') targetY += TILE_SIZE;
+    else if (player.dir === 'left') targetX -= TILE_SIZE;
+    else if (player.dir === 'right') targetX += TILE_SIZE;
+
     const nearbyNPCIndex = npcsRef.current.findIndex(npc => {
-      const dx = Math.abs(npc.pos.x - player.pos.x);
-      const dy = Math.abs(npc.pos.y - player.pos.y);
-      return dx <= TILE_SIZE * 1.5 && dy <= TILE_SIZE * 1.5;
+      // Use round to avoid tiny floating point differences
+      const nx = Math.round(npc.pos.x);
+      const ny = Math.round(npc.pos.y);
+      const tx = Math.round(targetX);
+      const ty = Math.round(targetY);
+      return nx === tx && ny === ty;
     });
 
     if (nearbyNPCIndex !== -1) {
@@ -108,6 +132,10 @@ export function GameEngine() {
       if (npc.isMoving) {
         npc.moveProgress = (npc.moveProgress || 0) + dt / MOVE_DURATION;
         if (npc.moveProgress >= 1) {
+          const oldX = npc.startPos!.x;
+          const oldY = npc.startPos!.y;
+          collisionMapRef.current.delete(`${oldX},${oldY}`);
+
           npc.isMoving = false;
           npc.pos = { ...npc.targetPos! };
           npc.walkFrame = 0;
@@ -140,15 +168,12 @@ export function GameEngine() {
           const inBounds = gridX >= 0 && gridX < MAP_WIDTH && gridY >= 0 && gridY < MAP_HEIGHT;
 
           if (inBounds && mapTileGrid[gridY][gridX] === 0) {
-            // Check collision with player
-            const player = playerRef.current;
-            const playerAtTarget = player.pos.x === nextX && player.pos.y === nextY;
-            const playerMovingToTarget = player.isMoving && Math.floor(player.pos.x/TILE_SIZE) === gridX && Math.floor(player.pos.y/TILE_SIZE) === gridY;
+            const isOccupied = collisionMapRef.current.has(`${nextX},${nextY}`);
 
-            // Check collision with other NPCs
-            const npcAtTarget = npcsRef.current.some(other => other.id !== npc.id && other.pos.x === nextX && other.pos.y === nextY);
-
-            if (!playerAtTarget && !playerMovingToTarget && !npcAtTarget) {
+            if (!isOccupied) {
+              // Reserve target
+              collisionMapRef.current.add(`${nextX},${nextY}`);
+              
               npc.dir = dir;
               npc.isMoving = true;
               npc.startPos = { ...npc.pos };
@@ -194,6 +219,10 @@ export function GameEngine() {
       player.pos.y = startPosRef.current.y + (targetPosRef.current.y - startPosRef.current.y) * progress;
 
       if (progress >= 1) {
+        const oldX = startPosRef.current.x;
+        const oldY = startPosRef.current.y;
+        collisionMapRef.current.delete(`${oldX},${oldY}`);
+
         player.isMoving = false;
         player.pos = { ...targetPosRef.current };
         player.walkFrame = player.isSurfing ? footCycleRef.current : 0;
@@ -257,11 +286,12 @@ export function GameEngine() {
           }
         }
 
-        const collidingNPC = currentState.npcs.some(npc => 
-          npc.pos.x === nextGridX && npc.pos.y === nextGridY
-        );
+        const isOccupied = collisionMapRef.current.has(`${nextGridX},${nextGridY}`);
+        
+        if (canMove && !isOccupied) {
+          // Reserve target
+          collisionMapRef.current.add(`${nextGridX},${nextGridY}`);
 
-        if (canMove && !collidingNPC) {
           // Reset bob timer when starting a move
           bobTimerRef.current = 0;
           

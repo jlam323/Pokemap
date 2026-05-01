@@ -21,7 +21,7 @@ export function NoOverlay({
     <div className="absolute inset-0 pointer-events-none select-none">
       <AnimatePresence>
         {gameState.isTalking && (
-          <DialogueBox gameState={gameState} isFullScreen />
+          <DialogueBox gameState={gameState} isFullScreen fontSize="text-md" className="pl-[8vh] pr-[15vh] pt-[1.5vh] pb-[3vh]" />
         )}
       </AnimatePresence>
 
@@ -77,7 +77,7 @@ export function NoOverlay({
         </div>
 
         {/* Action Button */}
-        <div className="absolute bottom-20 right-8 pointer-events-auto">
+        <div className="absolute bottom-25 right-8 pointer-events-auto">
           <button 
             onClick={handleInteraction}
             className="w-20 h-20 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
