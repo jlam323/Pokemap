@@ -48,6 +48,7 @@ export interface Entity {
   mapId?: number; // Add mapId to associate NPCs with a map
   npcType?: 'standard' | 'shopkeeper';
   isActionActive?: boolean;
+  actionTrigger?: 'start' | 'end';
 }
 
 export interface Item {
@@ -72,7 +73,10 @@ export interface GameState {
   activeDialogue: string[] | null;
   dialogueIndex: number;
   currentMapId: number;
+  previousMapId: number | null;
   mapReturnPositions: Record<number, Position>; // Track where to return for each map
   collectedItemIds: string[];
   isTransitioning: boolean;
+  hasInteractedWithNPC: boolean;
+  hasInteractedWithItem: boolean;
 }

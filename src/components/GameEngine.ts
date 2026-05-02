@@ -5,14 +5,16 @@ import { INITIAL_NPCS } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
 import { INITIAL_ITEMS } from '../data/items';
 import mapsData from '../data/maps.json';
-import mapTileGridMain from '../data/cerulean-city-map-tile-grid.json';
-import mapTileGridPokeCenter from '../data/pokemon-center-map-tile-grid.json';
+import mapTileGridMain from '../data/mapTileGrid/kanto.json';
+import mapTileGridPokeCenter from '../data/mapTileGrid/pokemon-center.json';
+import mapTileGridPokeMart from '../data/mapTileGrid/pokemart.json';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 
 const MAPS = mapsData as MapConfig[];
 const TILE_GRIDS: Record<string, number[][]> = {
-  'cerulean-city-map-tile-grid.json': mapTileGridMain,
-  'pokemon-center-map-tile-grid.json': mapTileGridPokeCenter
+  'kanto.json': mapTileGridMain,
+  'pokemon-center.json': mapTileGridPokeCenter,
+  'pokemart.json': mapTileGridPokeMart
 };
 
 export function GameEngine() {
@@ -38,9 +40,12 @@ export function GameEngine() {
       activeDialogue: null,
       dialogueIndex: 0,
       currentMapId: initialMap.id,
+      previousMapId: null,
       mapReturnPositions: {},
       collectedItemIds: [],
-      isTransitioning: false
+      isTransitioning: false,
+      hasInteractedWithNPC: false,
+      hasInteractedWithItem: false
     };
   });
 
@@ -109,6 +114,7 @@ export function GameEngine() {
           npcs: filteredNpcs,
           items: filteredItems,
           currentMapId: mapId,
+          previousMapId: prev.currentMapId,
           isTalking: false,
           talkingNPCId: null,
           talkingItemId: null,
@@ -127,22 +133,29 @@ export function GameEngine() {
         // Smoothly end transition after map update
         setTimeout(() => {
             setGameState(prev => ({ ...prev, isTransitioning: false }));
-            
+
             // Trigger entry sequence (auto-step)
             if (!skipEntryAnimation) {
-              setTimeout(() => {
-                  triggerEntryStep(mapId, newPlayerPos);
-              }, 300);
+              const triggered = triggerEntryStep(mapId, newPlayerPos);
+              if (triggered) {
+                // Wait for the auto-step move to complete + buffer
+                setTimeout(() => {
+                  isAutoSteppingRef.current = false;
+                }, MOVE_DURATION + 100);
+              }
             }
         }, 200);
     }, 400);
   }, [initCollisionMap]);
 
+  const isAutoSteppingRef = useRef(false);
+  const autoStepDirRef = useRef<Direction | null>(null);
+
   const triggerEntryStep = (mapId: number, spawnPos: Position) => {
-    if (stateRef.current.currentMapId !== mapId) return;
+    if (stateRef.current.currentMapId !== mapId) return false;
 
     const currentMapData = MAPS.find(m => m.id === mapId);
-    if (!currentMapData) return;
+    if (!currentMapData) return false;
 
     const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
     const gridX = Math.floor(spawnPos.x / TILE_SIZE);
@@ -159,21 +172,13 @@ export function GameEngine() {
         const ty = gridY + d.y;
         if (ty >= 0 && ty < tileGrid.length && tx >= 0 && tx < tileGrid[0].length) {
             if (tileGrid[ty][tx] === 0) {
-                // Simulate key press to move
-                const keyMap: Record<Direction, string> = {
-                    up: 'arrowup',
-                    down: 'arrowdown',
-                    left: 'arrowleft',
-                    right: 'arrowright'
-                };
-                keysPressed.current.add(keyMap[d.dir]);
-                setTimeout(() => {
-                    keysPressed.current.delete(keyMap[d.dir]);
-                }, 100);
-                break;
+                isAutoSteppingRef.current = true;
+                autoStepDirRef.current = d.dir;
+                return true;
             }
         }
     }
+    return false;
   };
   const keysPressed = useRef<Set<string>>(new Set());
   const moveTimerRef = useRef<number>(0);
@@ -187,6 +192,38 @@ export function GameEngine() {
   useEffect(() => {
     stateRef.current = gameState;
   }, [gameState]);
+
+  const triggerNPCAction = useCallback((npcId: string) => {
+    setGameState(prev => {
+      const npcIndex = prev.npcs.findIndex(n => n.id === npcId);
+      if (npcIndex === -1) return prev;
+
+      const newNpcs = [...prev.npcs];
+      newNpcs[npcIndex] = { ...newNpcs[npcIndex], isActionActive: true };
+      
+      // Update ref for persistence
+      if (npcsRef.current[npcIndex]) {
+        npcsRef.current[npcIndex].isActionActive = true;
+      }
+
+      // Clear action after brief delay
+      setTimeout(() => {
+        setGameState(s => {
+          const updatedNpcs = [...s.npcs];
+          const idx = updatedNpcs.findIndex(n => n.id === npcId);
+          if (idx !== -1) {
+            updatedNpcs[idx] = { ...updatedNpcs[idx], isActionActive: false };
+            if (npcsRef.current[idx]) {
+              npcsRef.current[idx].isActionActive = false;
+            }
+          }
+          return { ...s, npcs: updatedNpcs };
+        });
+      }, 800);
+
+      return { ...prev, npcs: newNpcs };
+    });
+  }, []);
 
   const nextDialogue = useCallback(() => {
     setGameState(prev => {
@@ -213,42 +250,25 @@ export function GameEngine() {
             activeDialogue: null, 
             dialogueIndex: 0,
             items: updatedItems,
-            collectedItemIds: newCollectedIds
+            collectedItemIds: newCollectedIds,
+            hasInteractedWithItem: true
           };
         }
 
         // Handle shopkeeper action sprite on final dialogue
         const talkingNPCId = prev.talkingNPCId;
         const talkingNPCIndex = prev.npcs.findIndex(n => n.id === talkingNPCId);
-        if (talkingNPCIndex !== -1 && prev.npcs[talkingNPCIndex].npcType === 'shopkeeper') {
-          const newNpcs = [...prev.npcs];
-          newNpcs[talkingNPCIndex] = { ...newNpcs[talkingNPCIndex], isActionActive: true };
-          
-          // Clear action after brief delay
-          setTimeout(() => {
-            setGameState(s => {
-              const updatedNpcs = [...s.npcs];
-              const idx = updatedNpcs.findIndex(n => n.id === talkingNPCId);
-              if (idx !== -1) {
-                updatedNpcs[idx] = { ...updatedNpcs[idx], isActionActive: false };
-                if (npcsRef.current[idx]) {
-                  npcsRef.current[idx].isActionActive = false;
-                }
-              }
-              return { ...s, npcs: updatedNpcs };
-            });
-          }, 800);
-
-          // Update ref for persistence
-          npcsRef.current[talkingNPCIndex].isActionActive = true;
-
-          return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0, npcs: newNpcs };
+        if (talkingNPCId && talkingNPCIndex !== -1) {
+          const npc = prev.npcs[talkingNPCIndex];
+          if (npc.npcType === 'shopkeeper' && npc.actionTrigger === 'end') {
+            triggerNPCAction(talkingNPCId);
+          }
         }
 
-        return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0 };
+        return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0, hasInteractedWithNPC: true };
       }
     });
-  }, [initCollisionMap]);
+  }, [initCollisionMap, triggerNPCAction]);
 
   const handleInteraction = useCallback(() => {
     const currentState = stateRef.current;
@@ -257,12 +277,14 @@ export function GameEngine() {
       return;
     }
 
+    if (currentState.isTransitioning) return;
+
     const player = playerRef.current;
     
     const nearbyNPCResult = findNearbyNPC(npcsRef.current, player.pos, player.dir);
     const nearbyNPCIndex = nearbyNPCResult ? nearbyNPCResult.index : -1;
 
-    if (nearbyNPCIndex !== -1) {
+      if (nearbyNPCIndex !== -1) {
       const nearbyNPC = npcsRef.current[nearbyNPCIndex];
       
       // Make NPC look at player ONLY if not a shopkeeper
@@ -284,6 +306,11 @@ export function GameEngine() {
       const groupIndex = nearbyNPC.dialogueGroupIndex || 0;
       const currentDialogueGroup = dialogueGroups[groupIndex % dialogueGroups.length] || [];
 
+      // Trigger start action if applicable
+      if (nearbyNPC.npcType === 'shopkeeper' && nearbyNPC.actionTrigger === 'start') {
+        triggerNPCAction(nearbyNPC.id);
+      }
+
       setGameState(prev => {
         const newNpcs = [...prev.npcs];
         // Increment dialogue group for next time
@@ -301,7 +328,8 @@ export function GameEngine() {
           isTalking: true,
           talkingNPCId: nearbyNPC.id,
           activeDialogue: currentDialogueGroup,
-          dialogueIndex: 0
+          dialogueIndex: 0,
+          hasInteractedWithNPC: true
         };
       });
     } else {
@@ -316,16 +344,17 @@ export function GameEngine() {
           isTalking: true,
           talkingItemId: item.id,
           activeDialogue: item.dialogue,
-          dialogueIndex: 0
+          dialogueIndex: 0,
+          hasInteractedWithItem: true
         }));
       }
     }
   }, [nextDialogue]);
 
-  const updateNPCs = useCallback((dt: number, isTalking: boolean) => {
+  const updateNPCs = useCallback((dt: number, isTalking: boolean, isTransitioning: boolean) => {
     npcsRef.current.forEach(npc => {
-      // Don't move if talking
-      if (isTalking) return;
+      // Don't move if talking or transitioning
+      if (isTalking || isTransitioning) return;
 
       if (npc.isMoving) {
         npc.moveProgress = (npc.moveProgress || 0) + dt / MOVE_DURATION;
@@ -392,7 +421,10 @@ export function GameEngine() {
 
   const updatePlayer = useCallback((dt: number, isTalking: boolean, currentState: GameState) => {
     const player = playerRef.current;
+    
     if (isTalking) return;
+    // Block input during transition, but allow auto-step
+    if (currentState.isTransitioning && !isAutoSteppingRef.current) return;
 
     if (isBumpingRef.current) {
       bumpTimerRef.current += dt;
@@ -437,9 +469,16 @@ export function GameEngine() {
         const currentMapData = MAPS.find(m => m.id === stateRef.current.currentMapId) || MAPS[0];
         const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
         
-        if (tileGrid && tileGrid[gridY] && tileGrid[gridY][gridX] >= 10) {
-          const targetMapId = tileGrid[gridY][gridX];
-          changeMap(targetMapId);
+        if (tileGrid && tileGrid[gridY]) {
+          const tileValue = tileGrid[gridY][gridX];
+          if (tileValue === 99) {
+            const prevMapId = stateRef.current.previousMapId;
+            if (prevMapId !== null) {
+              changeMap(prevMapId);
+            }
+          } else if (tileValue >= 10) {
+            changeMap(tileValue);
+          }
         }
       }
     } else {
@@ -460,20 +499,31 @@ export function GameEngine() {
       let newDir = player.dir;
       let moving = false;
 
-      const keys = keysPressed.current;
-      if (keys.has('w') || keys.has('arrowup')) {
+      let moveDir: Direction | null = null;
+      if (autoStepDirRef.current) {
+        moveDir = autoStepDirRef.current;
+        autoStepDirRef.current = null;
+      } else if (!currentState.isTransitioning && !isAutoSteppingRef.current) {
+        const keys = keysPressed.current;
+        if (keys.has('w') || keys.has('arrowup')) moveDir = 'up';
+        else if (keys.has('s') || keys.has('arrowdown')) moveDir = 'down';
+        else if (keys.has('a') || keys.has('arrowleft')) moveDir = 'left';
+        else if (keys.has('d') || keys.has('arrowright')) moveDir = 'right';
+      }
+
+      if (moveDir === 'up') {
         nextGridY -= TILE_SIZE;
         newDir = 'up';
         moving = true;
-      } else if (keys.has('s') || keys.has('arrowdown')) {
+      } else if (moveDir === 'down') {
         nextGridY += TILE_SIZE;
         newDir = 'down';
         moving = true;
-      } else if (keys.has('a') || keys.has('arrowleft')) {
+      } else if (moveDir === 'left') {
         nextGridX -= TILE_SIZE;
         newDir = 'left';
         moving = true;
-      } else if (keys.has('d') || keys.has('arrowright')) {
+      } else if (moveDir === 'right') {
         nextGridX += TILE_SIZE;
         newDir = 'right';
         moving = true;
@@ -530,11 +580,11 @@ export function GameEngine() {
         }
       }
     }
-  }, []);
+  }, [changeMap]);
 
   const update = useCallback((dt: number) => {
     const currentState = stateRef.current;
-    updateNPCs(dt, currentState.isTalking);
+    updateNPCs(dt, currentState.isTalking, currentState.isTransitioning);
     updatePlayer(dt, currentState.isTalking, currentState);
   }, [updateNPCs, updatePlayer]);
 

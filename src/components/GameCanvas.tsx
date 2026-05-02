@@ -6,8 +6,6 @@ import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
 import { TILE_SIZE } from '../constants';
-import { NPC_SPRITE_CONFIGS } from '../data/npcs';
-import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { useAssets } from '../hooks/useAssets';
 import { drawPixelSprite, drawItemSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
@@ -220,12 +218,19 @@ export default function GameCanvas() {
     const nearbyItemResult = findNearbyItem(itemsRef.current, player.pos, player.dir);
     const nearbyItem = nearbyItemResult ? nearbyItemResult.item : null;
 
-    if ((nearbyNPC || nearbyItem) && !currentState.isTalking) {
+    const isNearbyNPC = !!nearbyNPC;
+    const isNearbyItem = !!nearbyItem;
+
+    const shouldShowPrompt = 
+        (isNearbyNPC && !currentState.hasInteractedWithNPC) || 
+        (isNearbyItem && !currentState.hasInteractedWithItem);
+
+    if (shouldShowPrompt && !currentState.isTalking) {
         ctx.fillStyle = 'white';
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 4;
         ctx.font = 'bold 14px font-mono';
-        const text = nearbyNPC ? 'PRESS SPACE TO TALK' : 'PRESS SPACE TO INTERACT';
+        const text = nearbyNPC ? 'PRESS SPACE TO TALK' : 'PRESS SPACE TO PICK UP';
         const textWidth = ctx.measureText(text).width;
         const textX = player.pos.x + 16 - textWidth/2;
         const textY = player.pos.y - 15;
@@ -305,9 +310,11 @@ export default function GameCanvas() {
         {(['none', 'gbc', 'gba'] as const).map(mode => (
           <button
             key={mode}
-            onClick={() => {
+            onClick={(e) => {
               if (mode === overlayMode) return;
               setOverlayMode(mode);
+              e.currentTarget.blur();
+              canvasRef.current?.focus();
             }}
             className={`px-3 py-1.5 md:px-6 md:py-2 text-[8px] md:text-[9px] font-black tracking-[1px] md:tracking-[3px] rounded-sm md:rounded-full transition-all duration-300 ${
               overlayMode === mode 
@@ -323,10 +330,12 @@ export default function GameCanvas() {
       {/* Map Switcher Toggle - For Testing */}
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col gap-2 z-[100] pointer-events-auto">
           <button
-            onClick={() => {
+            onClick={(e) => {
               const currentIndex = MAPS.findIndex(m => m.id === gameState.currentMapId);
               const nextIndex = (currentIndex + 1) % MAPS.length;
               changeMap(MAPS[nextIndex].id, undefined, true);
+              e.currentTarget.blur();
+              canvasRef.current?.focus();
             }}
             className="group px-4 py-3 md:px-6 md:py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl md:rounded-full text-white/50 hover:text-white transition-all shadow-2xl flex items-center gap-3 active:scale-95"
           >
