@@ -198,8 +198,16 @@ export default function GameCanvas() {
     itemsRef.current.forEach(item => {
       if (item.isCollected) return;
       const images = itemImages[item.spriteName];
-      // Item images are typically single frame, so we take the first available frame if it matches frames[0]
-      const frame = images ? (Object.values(images)[0] as HTMLImageElement) : undefined;
+      if (!images) return;
+
+      let frame: HTMLImageElement | undefined;
+      if (item.isActionActive && item.actionFrame) {
+        const frameKey = `${item.spriteName}-action-${item.actionFrame}`;
+        frame = images[frameKey] || images[item.spriteName];
+      } else {
+        // Default to the first frame or the one matching spriteName
+        frame = images[item.spriteName] || (Object.values(images)[0] as HTMLImageElement);
+      }
       
       drawItemSprite(
         ctx,

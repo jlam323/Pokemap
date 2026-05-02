@@ -13,6 +13,7 @@ export function useAssets() {
   const npcImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
   const itemImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
   const mapsImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const dialogueImagesRef = useRef<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
     let imagesToLoad = 0;
@@ -84,6 +85,21 @@ export function useAssets() {
       });
     });
 
+    // Dialogue Assets
+    ['textbox'].forEach(frame => {
+      imagesToLoad++;
+      const dImg = new Image();
+      dImg.src = `${base}/dialogue/${frame}.png`;
+      dImg.onload = () => {
+        dialogueImagesRef.current[frame] = dImg;
+        checkAllLoaded();
+      };
+      dImg.onerror = () => {
+        console.warn(`Dialogue image failed to load: ${frame}`);
+        checkAllLoaded();
+      };
+    });
+
     return () => {
       // Cleanup if needed
     };
@@ -94,6 +110,7 @@ export function useAssets() {
     playerImages: playerImagesRef.current,
     npcImages: npcImagesRef.current,
     itemImages: itemImagesRef.current,
-    mapImages: mapsImagesRef.current
+    mapImages: mapsImagesRef.current,
+    dialogueImages: dialogueImagesRef.current
   };
 }

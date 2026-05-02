@@ -26,6 +26,23 @@ export interface MapConfig {
   };
 }
 
+export interface NPCBase {
+  id: string;
+  spriteName: string;
+  name: string;
+  movementType?: 'stationary' | 'random';
+  dialogue?: string[][];
+  npcType?: 'standard' | 'shopkeeper';
+  actionTrigger?: 'start' | 'end';
+}
+
+export interface NPCPlacement {
+  npcId: string; // References NPCBase.id
+  mapId: number;
+  pos: Position;
+  dir: Direction;
+}
+
 export interface Entity {
   id: string;
   type: 'player' | 'npc';
@@ -61,6 +78,8 @@ export interface Item {
   mapId: number;
   isCollected?: boolean;
   scale?: number;
+  isActionActive?: boolean;
+  actionFrame?: number;
 }
 
 export interface GameState {

@@ -1,4 +1,4 @@
-import { Entity } from '../types';
+import { Entity, NPCBase, NPCPlacement } from '../types';
 import { TILE_SIZE } from '../constants';
 
 export const DEFAULT_NPC_SCALE = 1.5;
@@ -49,31 +49,20 @@ export const NPC_SPRITE_CONFIGS: Record<string, NPCSpriteConfig> = {
   
 };
 
-export const INITIAL_NPCS: Entity[] = [
+export const NPC_BASES: NPCBase[] = [
   {
-    id: 'kanto-npc1',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 22, y: TILE_SIZE * 27 },
-    dir: 'down',
-    spriteIndex: 1,
+    id: 'oak',
     spriteName: 'oak',
     name: 'Professor Oak',
     movementType: 'random',
-    movementTimer: Math.random() * 5000,
     dialogue: [
       ["This world is inhabited by creatures called Pokémon"],
       ["Hey! Wait! Don't go out!", "It's unsafe! Wild Pokémon live in tall grass!"],
       ["...Erm, what was my grandson's name now?"]
-    ],
-    dialogueGroupIndex: 0,
-    mapId: 10
+    ]
   },
   {
-    id: 'kanto-npc2',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 27, y: TILE_SIZE * 33 },
-    dir: 'down',
-    spriteIndex: 2,
+    id: 'brock',
     spriteName: 'brock',
     name: 'Brock',
     movementType: 'stationary',
@@ -81,53 +70,66 @@ export const INITIAL_NPCS: Entity[] = [
       ["I'm Brock, the Pewter Gym Leader.", "I'm an expert on Rock-type Pokémon."],
       ["I'll use my trusty frying pan...", "as a drying pan!"],
       ["These donuts are great! Jelly-filled are my favorite. Nothing beats a jelly-filled donut!"]
-    ],
-    dialogueGroupIndex: 0,
-    mapId: 10
+    ]
   },
   {
-    id: 'pokemon-center-nurse-joy',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 7, y: TILE_SIZE * 2 },
-    dir: 'down',
-    spriteIndex: 3,
+    id: 'nursejoy',
     spriteName: 'nursejoy',
     name: 'Nurse Joy',
     movementType: 'stationary',
     npcType: 'shopkeeper',
     actionTrigger: 'end',
-    dialogue: [["Welcome to the Pokémon Center!", "We can heal your Pokémon to perfect health.", "We hope to see you again!"]],
-    dialogueGroupIndex: 0,
-    mapId: 11
+    dialogue: [["Welcome to the Pokémon Center!", "We can heal your Pokémon to perfect health.", "We hope to see you again!"]]
   },
   {
-    id: 'pokemart-mystery-gift',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 1, y: TILE_SIZE * 3 },
-    dir: 'down',
-    spriteIndex: 4,
+    id: 'mysterygift',
     spriteName: 'mysterygift',
     name: 'Delivery Man',
     movementType: 'stationary',
     npcType: 'shopkeeper',
     actionTrigger: 'start',
-    dialogue: [["Hey there, there are no mystery gifts today. Come back again another time."]],
-    dialogueGroupIndex: 0,
-    mapId: 12
+    dialogue: [["Hey there, there are no mystery gifts today. Come back again another time."]]
   },
   {
-    id: 'pokemart-cashier',
-    type: 'npc',
-    pos: { x: TILE_SIZE * 2, y: TILE_SIZE * 2 },
-    dir: 'right',
-    spriteIndex: 5,
+    id: 'cashier',
     spriteName: 'cashier',
     name: 'PokeMart Employee',
     movementType: 'stationary',
     npcType: 'shopkeeper',
     actionTrigger: 'start',
-    dialogue: [["Sorry but we're currently sold out of everything.", "...we'll probably be out of stock forever but you could always check again tomorrow!"]],
-    dialogueGroupIndex: 0,
-    mapId: 12
+    dialogue: [["Sorry but we're currently sold out of everything.", "...we'll probably be out of stock forever but you could always check again tomorrow!"]]
   }
 ];
+
+export const NPC_PLACEMENTS: NPCPlacement[] = [
+  // Pallet Town / Kanto
+  { npcId: 'oak', mapId: 10, pos: { x: TILE_SIZE * 22, y: TILE_SIZE * 27 }, dir: 'down' },
+  { npcId: 'brock', mapId: 10, pos: { x: TILE_SIZE * 27, y: TILE_SIZE * 33 }, dir: 'down' },
+  // Pokemon Center
+  { npcId: 'nursejoy', mapId: 11, pos: { x: TILE_SIZE * 7, y: TILE_SIZE * 2 }, dir: 'down' },
+  // PokeMart
+  { npcId: 'mysterygift', mapId: 12, pos: { x: TILE_SIZE * 1, y: TILE_SIZE * 3 }, dir: 'down' },
+  { npcId: 'cashier', mapId: 12, pos: { x: TILE_SIZE * 2, y: TILE_SIZE * 2 }, dir: 'right' }
+];
+
+export const INITIAL_NPCS: Entity[] = NPC_PLACEMENTS.map((placement, index) => {
+  const base = NPC_BASES.find(b => b.id === placement.npcId);
+  if (!base) throw new Error(`NPC Template with id ${placement.npcId} not found`);
+
+  return {
+    id: `${placement.npcId}-${placement.mapId}`,
+    type: 'npc',
+    pos: placement.pos,
+    dir: placement.dir,
+    spriteIndex: index + 1,
+    spriteName: base.spriteName,
+    name: base.name,
+    movementType: base.movementType,
+    movementTimer: base.movementType === 'random' ? Math.random() * 5000 : undefined,
+    dialogue: base.dialogue,
+    dialogueGroupIndex: 0,
+    mapId: placement.mapId,
+    npcType: base.npcType,
+    actionTrigger: base.actionTrigger
+  };
+});

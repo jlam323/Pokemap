@@ -225,6 +225,38 @@ export function GameEngine() {
     });
   }, []);
 
+  const triggerItemAction = useCallback((itemId: string) => {
+    const frames = [1, 2, 3, 4];
+    let currentIdx = 0;
+
+    const playNextFrame = () => {
+      if (currentIdx >= frames.length) return;
+      const frameValue = frames[currentIdx];
+      
+      setGameState(prev => {
+        const itemIdx = prev.items.findIndex(i => i.id === itemId);
+        if (itemIdx === -1) return prev;
+        
+        const newItems = [...prev.items];
+        newItems[itemIdx] = { ...newItems[itemIdx], isActionActive: true, actionFrame: frameValue };
+        
+        if (itemsRef.current[itemIdx]) {
+          itemsRef.current[itemIdx].isActionActive = true;
+          itemsRef.current[itemIdx].actionFrame = frameValue;
+        }
+
+        return { ...prev, items: newItems };
+      });
+
+      currentIdx++;
+      if (currentIdx < frames.length) {
+        setTimeout(playNextFrame, 250);
+      }
+    };
+
+    playNextFrame();
+  }, []);
+
   const nextDialogue = useCallback(() => {
     setGameState(prev => {
       if (!prev.activeDialogue) return prev;
@@ -339,6 +371,10 @@ export function GameEngine() {
 
       if (nearbyItemIndex !== -1) {
         const item = itemsRef.current[nearbyItemIndex];
+        
+        // Trigger animation for item
+        triggerItemAction(item.id);
+
         setGameState(prev => ({
           ...prev,
           isTalking: true,
@@ -349,7 +385,7 @@ export function GameEngine() {
         }));
       }
     }
-  }, [nextDialogue]);
+  }, [nextDialogue, triggerItemAction]);
 
   const updateNPCs = useCallback((dt: number, isTalking: boolean, isTransitioning: boolean) => {
     npcsRef.current.forEach(npc => {
