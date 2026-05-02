@@ -50,14 +50,29 @@ export interface Entity {
   isActionActive?: boolean;
 }
 
+export interface Item {
+  id: string;
+  name: string;
+  pos: Position;
+  spriteIndex: number;
+  spriteName: string;
+  dialogue: string[];
+  mapId: number;
+  isCollected?: boolean;
+  scale?: number;
+}
+
 export interface GameState {
   player: Entity;
   npcs: Entity[];
+  items: Item[];
   isTalking: boolean;
   talkingNPCId: string | null;
+  talkingItemId: string | null;
   activeDialogue: string[] | null;
   dialogueIndex: number;
   currentMapId: number;
   mapReturnPositions: Record<number, Position>; // Track where to return for each map
+  collectedItemIds: string[];
   isTransitioning: boolean;
 }

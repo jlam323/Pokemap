@@ -1,6 +1,7 @@
 import { Direction } from '../types';
 import { NPC_SPRITE_CONFIGS, DEFAULT_NPC_SCALE } from '../data/npcs';
 import { PLAYER_SCALE, SURF_SCALE_MODIFIER } from '../data/player';
+import { TILE_SIZE } from '../constants';
 
 export const drawPixelSprite = (
   ctx: CanvasRenderingContext2D, 
@@ -20,13 +21,19 @@ export const drawPixelSprite = (
   
   // If we have images, use them first
   if (images) {
-    const baseScale = (spriteName ? (NPC_SPRITE_CONFIGS[spriteName]?.scale || DEFAULT_NPC_SCALE) : PLAYER_SCALE) * scaleMultiplier;
+    let scaleBaseValue = PLAYER_SCALE;
+    if (spriteName) {
+      scaleBaseValue = NPC_SPRITE_CONFIGS[spriteName]?.scale || (images[spriteName] ? 1 : DEFAULT_NPC_SCALE);
+    }
+    const baseScale = scaleBaseValue * scaleMultiplier;
     const scale = isSurfing ? baseScale * SURF_SCALE_MODIFIER : baseScale;
     const size = 32 * scale;
     
     let spriteKey: string;
     
-    if (isActionActive && spriteName) {
+    if (images[spriteName || '']) {
+      spriteKey = spriteName || '';
+    } else if (isActionActive && spriteName) {
       spriteKey = `${spriteName}-action`;
     } else if (isSurfing) {
       // Surfing has no neutral, uses 1 or 2
@@ -59,4 +66,25 @@ export const drawPixelSprite = (
       ctx.drawImage(img, x - xOffset, y - yOffsetInner, displayWidth, displayHeight);
     }
   }
+};
+
+export const drawItemSprite = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  image?: HTMLImageElement,
+  scale: number = 1
+) => {
+  if (!image) return;
+
+  const width = image.width * scale;
+  const height = image.height * scale;
+
+  // Center horizontally within 32px tile
+  const xOffset = (width - TILE_SIZE) / 2;
+  // Align bottom of sprite with bottom of 32px tile
+  const yOffset = height - TILE_SIZE;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, Math.round(x - xOffset), Math.round(y - yOffset), width, height);
 };

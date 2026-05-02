@@ -1,11 +1,13 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Entity, GameState, Position, Direction, MapConfig } from '../types';
+import { Entity, GameState, Position, Direction, MapConfig, Item } from '../types';
 import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
 import { INITIAL_NPCS } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
+import { INITIAL_ITEMS } from '../data/items';
 import mapsData from '../data/maps.json';
 import mapTileGridMain from '../data/cerulean-city-map-tile-grid.json';
 import mapTileGridPokeCenter from '../data/pokemon-center-map-tile-grid.json';
+import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 
 const MAPS = mapsData as MapConfig[];
 const TILE_GRIDS: Record<string, number[][]> = {
@@ -17,6 +19,7 @@ export function GameEngine() {
   const [gameState, setGameState] = useState<GameState>(() => {
     const initialMap = MAPS[0];
     const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === initialMap.id);
+    const filteredItems = INITIAL_ITEMS.filter(item => item.mapId === initialMap.id);
     const playerWithStartPos = {
       ...INITIAL_PLAYER,
       pos: { 
@@ -28,35 +31,44 @@ export function GameEngine() {
     return {
       player: playerWithStartPos,
       npcs: filteredNpcs,
+      items: filteredItems,
       isTalking: false,
       talkingNPCId: null,
+      talkingItemId: null,
       activeDialogue: null,
       dialogueIndex: 0,
       currentMapId: initialMap.id,
       mapReturnPositions: {},
+      collectedItemIds: [],
       isTransitioning: false
     };
   });
 
   const playerRef = useRef<Entity>(gameState.player);
   const npcsRef = useRef<Entity[]>(gameState.npcs);
+  const itemsRef = useRef<Item[]>(gameState.items);
   const stateRef = useRef<GameState>(gameState);
   const collisionMapRef = useRef<Set<string>>(new Set());
 
   const currentMap = MAPS.find(m => m.id === gameState.currentMapId) || MAPS[0];
 
   // Initialize collision map
-  const initCollisionMap = useCallback((player: Entity, npcs: Entity[]) => {
+  const initCollisionMap = useCallback((player: Entity, npcs: Entity[], items: Item[]) => {
     const map = new Set<string>();
     map.add(`${player.pos.x},${player.pos.y}`);
     npcs.forEach(npc => {
       map.add(`${npc.pos.x},${npc.pos.y}`);
     });
+    items.forEach(item => {
+      if (!item.isCollected) {
+        map.add(`${item.pos.x},${item.pos.y}`);
+      }
+    });
     collisionMapRef.current = map;
   }, []);
 
   useEffect(() => {
-    initCollisionMap(gameState.player, gameState.npcs);
+    initCollisionMap(gameState.player, gameState.npcs, gameState.items);
   }, []);
 
   const changeMap = useCallback((mapId: number, spawnPos?: Position, skipEntryAnimation: boolean = false) => {
@@ -69,6 +81,10 @@ export function GameEngine() {
     // Wait for fade out duration
     setTimeout(() => {
         const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === targetMap.id);
+        const collectedIds = stateRef.current.collectedItemIds;
+        const filteredItems = INITIAL_ITEMS.filter(item => 
+          item.mapId === targetMap.id && !collectedIds.includes(item.id)
+        );
         
         let newPlayerPos = spawnPos || (stateRef.current.mapReturnPositions[mapId] ? { ...stateRef.current.mapReturnPositions[mapId] } : {
           x: targetMap.startPos.x * TILE_SIZE,
@@ -84,15 +100,18 @@ export function GameEngine() {
 
         playerRef.current = newPlayer;
         npcsRef.current = filteredNpcs;
-        initCollisionMap(newPlayer, filteredNpcs);
+        itemsRef.current = filteredItems;
+        initCollisionMap(newPlayer, filteredNpcs, filteredItems);
 
         setGameState(prev => ({
           ...prev,
           player: newPlayer,
           npcs: filteredNpcs,
+          items: filteredItems,
           currentMapId: mapId,
           isTalking: false,
           talkingNPCId: null,
+          talkingItemId: null,
           activeDialogue: null,
           dialogueIndex: 0,
           // Save current position of PREVIOUS map as its return position
@@ -175,6 +194,29 @@ export function GameEngine() {
       if (prev.dialogueIndex < prev.activeDialogue.length - 1) {
         return { ...prev, dialogueIndex: prev.dialogueIndex + 1 };
       } else {
+        // Handle item collection
+        if (prev.talkingItemId) {
+          const itemId = prev.talkingItemId;
+          const updatedItems = prev.items.filter(item => item.id !== itemId);
+          const newCollectedIds = [...prev.collectedItemIds, itemId];
+          
+          // Update ref
+          itemsRef.current = itemsRef.current.filter(item => item.id !== itemId);
+          
+          // Re-init collisions without the item
+          initCollisionMap(playerRef.current, npcsRef.current, itemsRef.current);
+
+          return { 
+            ...prev, 
+            isTalking: false, 
+            talkingItemId: null, 
+            activeDialogue: null, 
+            dialogueIndex: 0,
+            items: updatedItems,
+            collectedItemIds: newCollectedIds
+          };
+        }
+
         // Handle shopkeeper action sprite on final dialogue
         const talkingNPCId = prev.talkingNPCId;
         const talkingNPCIndex = prev.npcs.findIndex(n => n.id === talkingNPCId);
@@ -206,7 +248,7 @@ export function GameEngine() {
         return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0 };
       }
     });
-  }, []);
+  }, [initCollisionMap]);
 
   const handleInteraction = useCallback(() => {
     const currentState = stateRef.current;
@@ -217,42 +259,8 @@ export function GameEngine() {
 
     const player = playerRef.current;
     
-    // Calculate target position in front of player
-    let targetX = player.pos.x;
-    let targetY = player.pos.y;
-    
-    if (player.dir === 'up') targetY -= TILE_SIZE;
-    else if (player.dir === 'down') targetY += TILE_SIZE;
-    else if (player.dir === 'left') targetX -= TILE_SIZE;
-    else if (player.dir === 'right') targetX += TILE_SIZE;
-
-    // Check 1 cell away first
-    let nearbyNPCIndex = npcsRef.current.findIndex(npc => {
-      const nx = Math.round(npc.pos.x);
-      const ny = Math.round(npc.pos.y);
-      const tx = Math.round(targetX);
-      const ty = Math.round(targetY);
-      return nx === tx && ny === ty;
-    });
-
-    // If not found, check 2 cells away for shopkeepers
-    if (nearbyNPCIndex === -1) {
-      let farTargetX = player.pos.x;
-      let farTargetY = player.pos.y;
-      if (player.dir === 'up') farTargetY -= TILE_SIZE * 2;
-      else if (player.dir === 'down') farTargetY += TILE_SIZE * 2;
-      else if (player.dir === 'left') farTargetX -= TILE_SIZE * 2;
-      else if (player.dir === 'right') farTargetX += TILE_SIZE * 2;
-
-      nearbyNPCIndex = npcsRef.current.findIndex(npc => {
-        if (npc.npcType !== 'shopkeeper') return false;
-        const nx = Math.round(npc.pos.x);
-        const ny = Math.round(npc.pos.y);
-        const ftx = Math.round(farTargetX);
-        const fty = Math.round(farTargetY);
-        return nx === ftx && ny === fty;
-      });
-    }
+    const nearbyNPCResult = findNearbyNPC(npcsRef.current, player.pos, player.dir);
+    const nearbyNPCIndex = nearbyNPCResult ? nearbyNPCResult.index : -1;
 
     if (nearbyNPCIndex !== -1) {
       const nearbyNPC = npcsRef.current[nearbyNPCIndex];
@@ -296,6 +304,21 @@ export function GameEngine() {
           dialogueIndex: 0
         };
       });
+    } else {
+      // Check for items
+      const nearbyItemResult = findNearbyItem(itemsRef.current, player.pos, player.dir);
+      const nearbyItemIndex = nearbyItemResult ? nearbyItemResult.index : -1;
+
+      if (nearbyItemIndex !== -1) {
+        const item = itemsRef.current[nearbyItemIndex];
+        setGameState(prev => ({
+          ...prev,
+          isTalking: true,
+          talkingItemId: item.id,
+          activeDialogue: item.dialogue,
+          dialogueIndex: 0
+        }));
+      }
     }
   }, [nextDialogue]);
 
@@ -565,6 +588,7 @@ export function GameEngine() {
     setGameState,
     playerRef,
     npcsRef,
+    itemsRef,
     stateRef,
     keysPressed,
     update,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
+import { ITEM_SPRITE_CONFIGS } from '../data/items';
 import mapsData from '../data/maps.json';
 import { MapConfig } from '../types';
 
@@ -10,6 +11,7 @@ export function useAssets() {
   const [isLoaded, setIsLoaded] = useState(false);
   const playerImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const npcImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
+  const itemImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
   const mapsImagesRef = useRef<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
@@ -67,6 +69,21 @@ export function useAssets() {
       });
     });
 
+    // Item Sprites
+    Object.entries(ITEM_SPRITE_CONFIGS).forEach(([spriteName, config]) => {
+      itemImagesRef.current[spriteName] = {};
+      config.frames.forEach(frame => {
+        imagesToLoad++;
+        const iImg = new Image();
+        iImg.src = `${base}${config.basePath}/${frame}.png`;
+        iImg.onload = () => {
+          itemImagesRef.current[spriteName][frame] = iImg;
+          checkAllLoaded();
+        };
+        iImg.onerror = checkAllLoaded;
+      });
+    });
+
     return () => {
       // Cleanup if needed
     };
@@ -76,6 +93,7 @@ export function useAssets() {
     isLoaded,
     playerImages: playerImagesRef.current,
     npcImages: npcImagesRef.current,
+    itemImages: itemImagesRef.current,
     mapImages: mapsImagesRef.current
   };
 }

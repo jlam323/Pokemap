@@ -49,7 +49,11 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, keysPressed
           {children}
           <AnimatePresence>
             {gameState.isTalking && gameState.activeDialogue && (
-              <DialogueBox gameState={gameState} fontSize="text-[1.2vh]" className="pl-[2.5vh] pr-[4vh] pt-[1.5vh] pb-[1.75vh]" />
+              <DialogueBox 
+                gameState={gameState} 
+                className="pl-[2.5vh] pr-[4vh] pt-[2vh] pb-[2.75vh]" 
+                minHeight="14vh"
+              />
             )}
           </AnimatePresence>
         </div>

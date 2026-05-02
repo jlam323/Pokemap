@@ -9,7 +9,8 @@ import { TILE_SIZE } from '../constants';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
 import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { useAssets } from '../hooks/useAssets';
-import { drawPixelSprite } from './SpriteRenderer';
+import { drawPixelSprite, drawItemSprite } from './SpriteRenderer';
+import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import mapsData from '../data/maps.json';
 import { MapConfig } from '../types';
 
@@ -25,12 +26,13 @@ export default function GameCanvas() {
   const dimensionsRef = useRef(dimensions);
   const lastTimeRef = useRef<number>(0);
 
-  const { isLoaded, playerImages, npcImages, mapImages } = useAssets();
+  const { isLoaded, playerImages, npcImages, itemImages, mapImages } = useAssets();
 
   const {
     gameState,
     playerRef,
     npcsRef,
+    itemsRef,
     stateRef,
     keysPressed,
     update,
@@ -194,30 +196,36 @@ export default function GameCanvas() {
       );
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.isActionActive);
-    
-    const nearbyNPC = currentState.npcs.find(npc => {
-        let targetX = player.pos.x;
-        let targetY = player.pos.y;
-        
-        if (player.dir === 'up') targetY -= TILE_SIZE;
-        else if (player.dir === 'down') targetY += TILE_SIZE;
-        else if (player.dir === 'left') targetX -= TILE_SIZE;
-        else if (player.dir === 'right') targetX += TILE_SIZE;
-
-        const nx = Math.round(npc.pos.x);
-        const ny = Math.round(npc.pos.y);
-        const tx = Math.round(targetX);
-        const ty = Math.round(targetY);
-        return nx === tx && ny === ty;
+    // Draw Items
+    itemsRef.current.forEach(item => {
+      if (item.isCollected) return;
+      const images = itemImages[item.spriteName];
+      // Item images are typically single frame, so we take the first available frame if it matches frames[0]
+      const frame = images ? (Object.values(images)[0] as HTMLImageElement) : undefined;
+      
+      drawItemSprite(
+        ctx,
+        item.pos.x,
+        item.pos.y,
+        frame,
+        (item.scale || 1.0) * spriteScale
+      );
     });
 
-    if (nearbyNPC && !currentState.isTalking) {
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.isActionActive);
+    
+    const nearbyNPCResult = findNearbyNPC(npcsRef.current, player.pos, player.dir);
+    const nearbyNPC = nearbyNPCResult ? nearbyNPCResult.npc : null;
+
+    const nearbyItemResult = findNearbyItem(itemsRef.current, player.pos, player.dir);
+    const nearbyItem = nearbyItemResult ? nearbyItemResult.item : null;
+
+    if ((nearbyNPC || nearbyItem) && !currentState.isTalking) {
         ctx.fillStyle = 'white';
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 4;
         ctx.font = 'bold 14px font-mono';
-        const text = 'PRESS SPACE TO TALK';
+        const text = nearbyNPC ? 'PRESS SPACE TO TALK' : 'PRESS SPACE TO INTERACT';
         const textWidth = ctx.measureText(text).width;
         const textX = player.pos.x + 16 - textWidth/2;
         const textY = player.pos.y - 15;
