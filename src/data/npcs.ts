@@ -46,7 +46,8 @@ export const INITIAL_NPCS: Entity[] = [
       ["Hey! Wait! Don't go out!", "It's unsafe! Wild Pokémon live in tall grass!"],
       ["...Erm, what was my grandson's name now?"]
     ],
-    dialogueGroupIndex: 0
+    dialogueGroupIndex: 0,
+    mapId: 10
   },
   {
     id: 'npc2',
@@ -62,6 +63,34 @@ export const INITIAL_NPCS: Entity[] = [
       ["I'll use my trusty frying pan...", "as a drying pan!"],
       ["These donuts are great! Jelly-filled are my favorite. Nothing beats a jelly-filled donut!"]
     ],
-    dialogueGroupIndex: 0
+    dialogueGroupIndex: 0,
+    mapId: 10
+  },
+  {
+    id: 'npc3',
+    type: 'npc',
+    pos: { x: TILE_SIZE * 15, y: TILE_SIZE * 15 },
+    dir: 'down',
+    spriteIndex: 1,
+    spriteName: 'oak',
+    name: 'Other Oak',
+    movementType: 'random',
+    movementTimer: Math.random() * 5000,
+    dialogue: [["I am on the second map!"]],
+    dialogueGroupIndex: 0,
+    mapId: 12
+  },
+  {
+    id: 'nurse-joy',
+    type: 'npc',
+    pos: { x: TILE_SIZE * 6, y: TILE_SIZE * 2 },
+    dir: 'down',
+    spriteIndex: 2,
+    spriteName: 'nursejoy',
+    name: 'Nurse Joy',
+    movementType: 'stationary',
+    dialogue: [["Welcome to the Pokémon Center!", "We can heal your Pokémon to perfect health."]],
+    dialogueGroupIndex: 0,
+    mapId: 11
   }
 ];

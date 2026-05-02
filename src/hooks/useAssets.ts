@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
+import mapsData from '../data/maps.json';
+import { MapConfig } from '../types';
+
+const MAPS = mapsData as MapConfig[];
 
 export function useAssets() {
   const [isLoaded, setIsLoaded] = useState(false);
   const playerImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const npcImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
-  const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const mapsImagesRef = useRef<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
     let imagesToLoad = 0;
@@ -14,25 +18,27 @@ export function useAssets() {
 
     const checkAllLoaded = () => {
       imagesLoaded++;
-      if (imagesLoaded === imagesToLoad) {
+      if (imagesLoaded >= imagesToLoad) {
         setIsLoaded(true);
       }
     };
 
     const base = import.meta.env.BASE_URL.replace(/\/$/, '') || '.';
 
-    // Map
-    imagesToLoad++;
-    const mapImg = new Image();
-    mapImg.src = `${base}/cerulean-city-map.png`;
-    mapImg.onload = () => {
-      mapImageRef.current = mapImg;
-      checkAllLoaded();
-    };
-    mapImg.onerror = () => {
-      console.warn('Map image failed to load');
-      checkAllLoaded(); // Still continue to show fallback if possible
-    };
+    // Maps
+    MAPS.forEach(map => {
+      imagesToLoad++;
+      const mapImg = new Image();
+      mapImg.src = `${base}/${map.mapImage}`;
+      mapImg.onload = () => {
+        mapsImagesRef.current[map.id] = mapImg;
+        checkAllLoaded();
+      };
+      mapImg.onerror = () => {
+        console.warn(`Map image failed to load for ${map.id}`);
+        checkAllLoaded();
+      };
+    });
 
     // Player Sprites
     PLAYER_SPRITE_CONFIG.frames.forEach(frame => {
@@ -70,6 +76,6 @@ export function useAssets() {
     isLoaded,
     playerImages: playerImagesRef.current,
     npcImages: npcImagesRef.current,
-    mapImage: mapImageRef.current
+    mapImages: mapsImagesRef.current
   };
 }

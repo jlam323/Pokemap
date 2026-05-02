@@ -1,0 +1,42 @@
+[
+  {
+    "id": 10,
+    "name": "Pallet Town",
+    "gridDataFile": "cerulean-city-map-tile-grid.json",
+    "mapImage": "cerulean-city-map.png",
+    "spriteScaleMultiplier": 1.0,
+    "startPos": { "x": 24, "y": 31 },
+    "overlays": {
+      "none": { "width": 100, "height": 60 },
+      "gbc": { "width": 100, "height": 60 },
+      "gba": { "width": 100, "height": 60 }
+    }
+  },
+  {
+    "id": 12,
+    "name": "Route 1",
+    "gridDataFile": "map_tile_grid.json",
+    "mapImage": "cerulean-city-map.png",
+    "spriteScaleMultiplier": 1.0,
+    "startPos": { "x": 10, "y": 10 },
+    "overlays": {
+      "none": { "width": 100, "height": 60 },
+      "gbc": { "width": 100, "height": 60 },
+      "gba": { "width": 100, "height": 60 }
+    }
+  },
+  {
+    "id": 11,
+    "name": "Pokemon Center",
+    "gridDataFile": "pokemon-center-map-tile-grid.json",
+    "mapImage": "pokemon-center-map.png",
+    "zoomMultiplier": 1.5,
+    "spriteScaleMultiplier": 0.85,
+    "startPos": { "x": 6, "y": 8 },
+    "overlays": {
+      "none": { "width": 14, "height": 9 },
+      "gbc": { "width": 14, "height": 9 },
+      "gba": { "width": 14, "height": 9 }
+    }
+  }
+]

@@ -6,6 +6,26 @@ export interface Position {
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
+export interface MapOverlayConfig {
+  width: number;
+  height: number;
+}
+
+export interface MapConfig {
+  id: number;
+  name: string;
+  gridDataFile: string;
+  mapImage: string;
+  zoomMultiplier?: number;
+  spriteScaleMultiplier?: number;
+  startPos: Position;
+  overlays: {
+    none: MapOverlayConfig;
+    gbc: MapOverlayConfig;
+    gba: MapOverlayConfig;
+  };
+}
+
 export interface Entity {
   id: string;
   type: 'player' | 'npc';
@@ -25,6 +45,7 @@ export interface Entity {
   targetPos?: Position;
   moveProgress?: number;
   bumpOffset?: Position;
+  mapId?: number; // Add mapId to associate NPCs with a map
 }
 
 export interface GameState {
@@ -34,4 +55,7 @@ export interface GameState {
   talkingNPCId: string | null;
   activeDialogue: string[] | null;
   dialogueIndex: number;
+  currentMapId: number;
+  mapReturnPositions: Record<number, Position>; // Track where to return for each map
+  isTransitioning: boolean;
 }

@@ -21,7 +21,7 @@ export function NoOverlay({
     <div className="absolute inset-0 pointer-events-none select-none">
       <AnimatePresence>
         {gameState.isTalking && (
-          <DialogueBox gameState={gameState} isFullScreen fontSize="text-md" className="pl-[8vh] pr-[15vh] pt-[1.5vh] pb-[3vh]" />
+          <DialogueBox gameState={gameState} isFullScreen fontSize="text-md" className="pl-[8vh] pr-[15vh] pt-[1.75vh] pb-[3vh]" />
         )}
       </AnimatePresence>
 

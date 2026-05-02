@@ -11,13 +11,15 @@ export const drawPixelSprite = (
   isSurfing: boolean = false,
   images?: Record<string, HTMLImageElement>,
   spriteName?: string,
-  bumpOffset?: { x: number, y: number }
+  bumpOffset?: { x: number, y: number },
+  scaleMultiplier: number = 1
  ) => {
   const x = Math.round(rawX + (bumpOffset?.x || 0));
   const y = Math.round(rawY + (bumpOffset?.y || 0));
+  
   // If we have images, use them first
   if (images) {
-    const baseScale = spriteName ? (NPC_SPRITE_CONFIGS[spriteName]?.scale || DEFAULT_NPC_SCALE) : PLAYER_SCALE;
+    const baseScale = (spriteName ? (NPC_SPRITE_CONFIGS[spriteName]?.scale || DEFAULT_NPC_SCALE) : PLAYER_SCALE) * scaleMultiplier;
     const scale = isSurfing ? baseScale * SURF_SCALE_MODIFIER : baseScale;
     const size = 32 * scale;
     

@@ -1,34 +1,161 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Entity, GameState, Position, Direction } from '../types';
-import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
+import { Entity, GameState, Position, Direction, MapConfig } from '../types';
+import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
 import { INITIAL_NPCS } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
-import mapTileGrid from '../data/map_tile_grid.json';
+import mapsData from '../data/maps.json';
+import mapTileGridMain from '../data/cerulean-city-map-tile-grid.json';
+import mapTileGridPokeCenter from '../data/pokemon-center-map-tile-grid.json';
+
+const MAPS = mapsData as MapConfig[];
+const TILE_GRIDS: Record<string, number[][]> = {
+  'cerulean-city-map-tile-grid.json': mapTileGridMain,
+  'pokemon-center-map-tile-grid.json': mapTileGridPokeCenter
+};
 
 export function GameEngine() {
-  const [gameState, setGameState] = useState<GameState>({
-    player: INITIAL_PLAYER,
-    npcs: INITIAL_NPCS,
-    isTalking: false,
-    talkingNPCId: null,
-    activeDialogue: null,
-    dialogueIndex: 0,
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const initialMap = MAPS[0];
+    const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === initialMap.id);
+    const playerWithStartPos = {
+      ...INITIAL_PLAYER,
+      pos: { 
+        x: initialMap.startPos.x * TILE_SIZE, 
+        y: initialMap.startPos.y * TILE_SIZE 
+      }
+    };
+
+    return {
+      player: playerWithStartPos,
+      npcs: filteredNpcs,
+      isTalking: false,
+      talkingNPCId: null,
+      activeDialogue: null,
+      dialogueIndex: 0,
+      currentMapId: initialMap.id,
+      mapReturnPositions: {},
+      isTransitioning: false
+    };
   });
 
-  const playerRef = useRef<Entity>(INITIAL_PLAYER);
-  const npcsRef = useRef<Entity[]>(INITIAL_NPCS);
+  const playerRef = useRef<Entity>(gameState.player);
+  const npcsRef = useRef<Entity[]>(gameState.npcs);
   const stateRef = useRef<GameState>(gameState);
   const collisionMapRef = useRef<Set<string>>(new Set());
 
-  // Initialize collision map with starting positions
-  useEffect(() => {
+  const currentMap = MAPS.find(m => m.id === gameState.currentMapId) || MAPS[0];
+
+  // Initialize collision map
+  const initCollisionMap = useCallback((player: Entity, npcs: Entity[]) => {
     const map = new Set<string>();
-    map.add(`${INITIAL_PLAYER.pos.x},${INITIAL_PLAYER.pos.y}`);
-    INITIAL_NPCS.forEach(npc => {
+    map.add(`${player.pos.x},${player.pos.y}`);
+    npcs.forEach(npc => {
       map.add(`${npc.pos.x},${npc.pos.y}`);
     });
     collisionMapRef.current = map;
   }, []);
+
+  useEffect(() => {
+    initCollisionMap(gameState.player, gameState.npcs);
+  }, []);
+
+  const changeMap = useCallback((mapId: number, spawnPos?: Position, skipEntryAnimation: boolean = false) => {
+    const targetMap = MAPS.find(m => m.id === mapId);
+    if (!targetMap) return;
+
+    // Start fade out
+    setGameState(prev => ({ ...prev, isTransitioning: true }));
+
+    // Wait for fade out duration
+    setTimeout(() => {
+        const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === targetMap.id);
+        
+        let newPlayerPos = spawnPos || (stateRef.current.mapReturnPositions[mapId] ? { ...stateRef.current.mapReturnPositions[mapId] } : {
+          x: targetMap.startPos.x * TILE_SIZE,
+          y: targetMap.startPos.y * TILE_SIZE
+        });
+
+        const newPlayer = {
+          ...playerRef.current,
+          pos: newPlayerPos,
+          isMoving: false,
+          bumpOffset: { x: 0, y: 0 }
+        };
+
+        playerRef.current = newPlayer;
+        npcsRef.current = filteredNpcs;
+        initCollisionMap(newPlayer, filteredNpcs);
+
+        setGameState(prev => ({
+          ...prev,
+          player: newPlayer,
+          npcs: filteredNpcs,
+          currentMapId: mapId,
+          isTalking: false,
+          talkingNPCId: null,
+          activeDialogue: null,
+          dialogueIndex: 0,
+          // Save current position of PREVIOUS map as its return position
+          mapReturnPositions: {
+            ...prev.mapReturnPositions,
+            [prev.currentMapId]: { ...prev.player.pos }
+          }
+        }));
+
+        startPosRef.current = newPlayerPos;
+        targetPosRef.current = newPlayerPos;
+
+        // Smoothly end transition after map update
+        setTimeout(() => {
+            setGameState(prev => ({ ...prev, isTransitioning: false }));
+            
+            // Trigger entry sequence (auto-step)
+            if (!skipEntryAnimation) {
+              setTimeout(() => {
+                  triggerEntryStep(mapId, newPlayerPos);
+              }, 300);
+            }
+        }, 200);
+    }, 400);
+  }, [initCollisionMap]);
+
+  const triggerEntryStep = (mapId: number, spawnPos: Position) => {
+    if (stateRef.current.currentMapId !== mapId) return;
+
+    const currentMapData = MAPS.find(m => m.id === mapId);
+    if (!currentMapData) return;
+
+    const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
+    const gridX = Math.floor(spawnPos.x / TILE_SIZE);
+    const gridY = Math.floor(spawnPos.y / TILE_SIZE);
+
+    // Try walking down first, then up
+    const directions: { x: number, y: number, dir: Direction }[] = [
+        { x: 0, y: 1, dir: 'down' },
+        { x: 0, y: -1, dir: 'up' }
+    ];
+
+    for (const d of directions) {
+        const tx = gridX + d.x;
+        const ty = gridY + d.y;
+        if (ty >= 0 && ty < tileGrid.length && tx >= 0 && tx < tileGrid[0].length) {
+            if (tileGrid[ty][tx] === 0) {
+                // Simulate key press to move
+                const keyMap: Record<Direction, string> = {
+                    up: 'arrowup',
+                    down: 'arrowdown',
+                    left: 'arrowleft',
+                    right: 'arrowright'
+                };
+                keysPressed.current.add(keyMap[d.dir]);
+                setTimeout(() => {
+                    keysPressed.current.delete(keyMap[d.dir]);
+                }, 100);
+                break;
+            }
+        }
+    }
+  };
   const keysPressed = useRef<Set<string>>(new Set());
   const moveTimerRef = useRef<number>(0);
   const bobTimerRef = useRef<number>(0);
@@ -165,9 +292,15 @@ export function GameEngine() {
           // Check walkability
           const gridX = Math.floor(nextX / TILE_SIZE);
           const gridY = Math.floor(nextY / TILE_SIZE);
-          const inBounds = gridX >= 0 && gridX < MAP_WIDTH && gridY >= 0 && gridY < MAP_HEIGHT;
+          
+          const currentMapData = MAPS.find(m => m.id === stateRef.current.currentMapId) || MAPS[0];
+          const mapWidth = currentMapData.overlays.none.width;
+          const mapHeight = currentMapData.overlays.none.height;
+          
+          const inBounds = gridX >= 0 && gridX < mapWidth && gridY >= 0 && gridY < mapHeight;
 
-          if (inBounds && mapTileGrid[gridY][gridX] === 0) {
+          const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
+          if (inBounds && tileGrid[gridY][gridX] === 0) {
             const isOccupied = collisionMapRef.current.has(`${nextX},${nextY}`);
 
             if (!isOccupied) {
@@ -226,6 +359,17 @@ export function GameEngine() {
         player.isMoving = false;
         player.pos = { ...targetPosRef.current };
         player.walkFrame = player.isSurfing ? footCycleRef.current : 0;
+
+        // Check for map transition
+        const gridX = Math.round(player.pos.x / TILE_SIZE);
+        const gridY = Math.round(player.pos.y / TILE_SIZE);
+        const currentMapData = MAPS.find(m => m.id === stateRef.current.currentMapId) || MAPS[0];
+        const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
+        
+        if (tileGrid && tileGrid[gridY] && tileGrid[gridY][gridX] >= 10) {
+          const targetMapId = tileGrid[gridY][gridX];
+          changeMap(targetMapId);
+        }
       }
     } else {
       // Bobbing logic for surfing
@@ -270,14 +414,18 @@ export function GameEngine() {
         const gridX = Math.floor(nextGridX / TILE_SIZE);
         const gridY = Math.floor(nextGridY / TILE_SIZE);
         
-        const inBounds = gridX >= 0 && gridX < MAP_WIDTH &&
-                         gridY >= 0 && gridY < MAP_HEIGHT;
+        const currentMapData = MAPS.find(m => m.id === stateRef.current.currentMapId) || MAPS[0];
+        const mapWidth = currentMapData.overlays.none.width;
+        const mapHeight = currentMapData.overlays.none.height;
+
+        const inBounds = gridX >= 0 && gridX < mapWidth &&
+                         gridY >= 0 && gridY < mapHeight;
 
         let canMove = inBounds;
         let enteringWater = false;
 
         if (inBounds) {
-          const tileGrid: number[][] = mapTileGrid;
+          const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
           const tileType = tileGrid[gridY][gridX];
           if (tileType === 1) {
             canMove = false;
@@ -374,6 +522,8 @@ export function GameEngine() {
     update,
     handleInteraction,
     handleArrowDown,
-    handleArrowUp
+    handleArrowUp,
+    changeMap,
+    currentMap
   };
 }

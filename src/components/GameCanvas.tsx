@@ -5,11 +5,15 @@ import { GameEngine } from './GameEngine';
 import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
-import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from '../constants';
+import { TILE_SIZE } from '../constants';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
 import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { useAssets } from '../hooks/useAssets';
 import { drawPixelSprite } from './SpriteRenderer';
+import mapsData from '../data/maps.json';
+import { MapConfig } from '../types';
+
+const MAPS = mapsData as MapConfig[];
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,7 +25,7 @@ export default function GameCanvas() {
   const dimensionsRef = useRef(dimensions);
   const lastTimeRef = useRef<number>(0);
 
-  const { isLoaded, playerImages, npcImages, mapImage } = useAssets();
+  const { isLoaded, playerImages, npcImages, mapImages } = useAssets();
 
   const {
     gameState,
@@ -32,8 +36,15 @@ export default function GameCanvas() {
     update,
     handleInteraction,
     handleArrowDown,
-    handleArrowUp
+    handleArrowUp,
+    changeMap,
+    currentMap
   } = GameEngine();
+
+  const currentMapRef = useRef(currentMap);
+  useEffect(() => {
+    currentMapRef.current = currentMap;
+  }, [currentMap]);
 
   useEffect(() => {
     displayedOverlayRef.current = displayedOverlayMode;
@@ -97,9 +108,12 @@ export default function GameCanvas() {
     if (width === 0 || height === 0) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const totalMapWidth = MAP_WIDTH * TILE_SIZE;
-    const totalMapHeight = MAP_HEIGHT * TILE_SIZE;
     const currentOverlay = displayedOverlayRef.current;
+    const mapConfig = currentMapRef.current;
+    const overlayConfig = mapConfig.overlays[currentOverlay];
+    
+    const totalMapWidth = overlayConfig.width * TILE_SIZE;
+    const totalMapHeight = overlayConfig.height * TILE_SIZE;
     const isNone = currentOverlay === 'none';
 
     const isGBC = currentOverlay === 'gbc';
@@ -109,11 +123,11 @@ export default function GameCanvas() {
     const maxVisibleTiles = isNone ? (isMobile ? 35 : 80) : (isGBC ? 16 : 38); 
     const baseVisibleTiles = width / TILE_SIZE;
 
-    let targetScale = 1;
+    let targetScale = mapConfig.zoomMultiplier || 1;
     if (baseVisibleTiles < minVisibleTiles) {
-      targetScale = width / (minVisibleTiles * TILE_SIZE);
+      targetScale *= width / (minVisibleTiles * TILE_SIZE);
     } else if (baseVisibleTiles > maxVisibleTiles) {
-      targetScale = width / (maxVisibleTiles * TILE_SIZE);
+      targetScale *= width / (maxVisibleTiles * TILE_SIZE);
     }
 
     // Quantize scale to nearest 0.25 to avoid messy sub-pixel boundaries
@@ -135,31 +149,33 @@ export default function GameCanvas() {
     let targetCameraX = player.pos.x + TILE_SIZE / 2 - logicalWidth / 2;
     let targetCameraY = player.pos.y + TILE_SIZE / 2 - logicalHeight / 2;
 
-    targetCameraX = Math.max(0, Math.min(targetCameraX, Math.max(0, totalMapWidth - logicalWidth)));
-    targetCameraY = Math.max(0, Math.min(targetCameraY, Math.max(0, totalMapHeight - logicalHeight)));
+    const maxCamX = Math.max(0, totalMapWidth - logicalWidth);
+    const maxCamY = Math.max(0, totalMapHeight - logicalHeight);
+
+    targetCameraX = Math.max(0, Math.min(targetCameraX, maxCamX));
+    targetCameraY = Math.max(0, Math.min(targetCameraY, maxCamY));
 
     const offsetX = logicalWidth > totalMapWidth ? (logicalWidth - totalMapWidth) / 2 : 0;
     const offsetY = logicalHeight > totalMapHeight ? (logicalHeight - totalMapHeight) / 2 : 0;
 
     ctx.save();
     
-    // Snap camera to the nearest logical pixel that corresponds to a physical pixel
-    // This prevents "shimmering" or "seams" between tiles
-    const cameraX = Math.round((targetCameraX - offsetX) * scale) / scale;
-    const cameraY = Math.round((targetCameraY - offsetY) * scale) / scale;
-
-    const physicalX = Math.round((offsetX - cameraX) * scale);
-    const physicalY = Math.round((offsetY - cameraY) * scale);
+    // Snap camera/translation to physical pixels
+    const physicalX = Math.round((offsetX - targetCameraX) * scale);
+    const physicalY = Math.round((offsetY - targetCameraY) * scale);
     
     ctx.translate(physicalX, physicalY);
     ctx.scale(scale, scale);
 
-    if (mapImage) {
-        ctx.drawImage(mapImage, 0, 0, totalMapWidth, totalMapHeight);
+    const currentMapImage = mapImages[mapConfig.id];
+    if (currentMapImage) {
+        ctx.drawImage(currentMapImage, 0, 0, totalMapWidth, totalMapHeight);
     } else {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, totalMapWidth, totalMapHeight);
     }
+
+    const spriteScale = mapConfig.spriteScaleMultiplier || 1;
 
     npcsRef.current.forEach(npc => {
       const images = npc.spriteName ? npcImages[npc.spriteName] : undefined;
@@ -172,11 +188,12 @@ export default function GameCanvas() {
         npc.isSurfing || false, 
         images,
         npc.spriteName,
-        npc.bumpOffset
+        npc.bumpOffset,
+        spriteScale
       );
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset);
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale);
     
     const nearbyNPC = currentState.npcs.find(npc => {
         let targetX = player.pos.x;
@@ -231,14 +248,30 @@ export default function GameCanvas() {
   }, [update, isLoaded]); // Re-start loop when loaded
 
   const renderCanvas = () => (
-    <canvas
-      ref={canvasRef}
-      tabIndex={0}
-      width={dimensions.width * (window.devicePixelRatio || 1)}
-      height={dimensions.height * (window.devicePixelRatio || 1)}
-      className="image-rendering-pixelated block w-full h-full outline-none"
-      style={{ imageRendering: 'pixelated' }}
-    />
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        tabIndex={0}
+        width={dimensions.width * (window.devicePixelRatio || 1)}
+        height={dimensions.height * (window.devicePixelRatio || 1)}
+        className="image-rendering-pixelated block w-full h-full outline-none transition-opacity duration-300"
+        style={{ 
+          imageRendering: 'pixelated',
+        }}
+      />
+      {/* Map Transition Fade Overlay - Nested within the canvas container */}
+      <AnimatePresence>
+        {gameState.isTransitioning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 bg-black z-10 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 
   if (!isLoaded) return (
@@ -276,6 +309,24 @@ export default function GameCanvas() {
             {mode.toUpperCase()}
           </button>
         ))}
+      </div>
+
+      {/* Map Switcher Toggle - For Testing */}
+      <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col gap-2 z-[100] pointer-events-auto">
+          <button
+            onClick={() => {
+              const currentIndex = MAPS.findIndex(m => m.id === gameState.currentMapId);
+              const nextIndex = (currentIndex + 1) % MAPS.length;
+              changeMap(MAPS[nextIndex].id, undefined, true);
+            }}
+            className="group px-4 py-3 md:px-6 md:py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl md:rounded-full text-white/50 hover:text-white transition-all shadow-2xl flex items-center gap-3 active:scale-95"
+          >
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-[7px] md:text-[8px] font-black tracking-[2px] text-white/30 uppercase mb-1">Current Map</span>
+              <span className="text-[9px] md:text-[10px] font-black tracking-[3px] uppercase">{currentMap.name}</span>
+            </div>
+          </button>
       </div>
 
       <AnimatePresence mode="wait" onExitComplete={() => setDisplayedOverlayMode(overlayMode)}>
