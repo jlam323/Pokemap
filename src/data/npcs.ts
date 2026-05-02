@@ -27,6 +27,12 @@ export const NPC_SPRITE_CONFIGS: Record<string, NPCSpriteConfig> = {
     frames: [
       'brock-neutral-down', 'brock-neutral-up', 'brock-neutral-left', 'brock-neutral-right'
     ]
+  },
+  'nursejoy': {
+    name: 'nursejoy',
+    basePath: '/npc/nursejoy',
+    scale: 1.5,
+    frames: ['nursejoy-neutral-down', 'nursejoy-action']
   }
 };
 
@@ -83,13 +89,14 @@ export const INITIAL_NPCS: Entity[] = [
   {
     id: 'nurse-joy',
     type: 'npc',
-    pos: { x: TILE_SIZE * 6, y: TILE_SIZE * 2 },
+    pos: { x: TILE_SIZE * 7, y: TILE_SIZE * 2 },
     dir: 'down',
     spriteIndex: 2,
     spriteName: 'nursejoy',
     name: 'Nurse Joy',
     movementType: 'stationary',
-    dialogue: [["Welcome to the Pokémon Center!", "We can heal your Pokémon to perfect health."]],
+    npcType: 'shopkeeper',
+    dialogue: [["Welcome to the Pokémon Center!", "We can heal your Pokémon to perfect health.", "We hope to see you again!"]],
     dialogueGroupIndex: 0,
     mapId: 11
   }

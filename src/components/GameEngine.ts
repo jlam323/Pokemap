@@ -175,6 +175,34 @@ export function GameEngine() {
       if (prev.dialogueIndex < prev.activeDialogue.length - 1) {
         return { ...prev, dialogueIndex: prev.dialogueIndex + 1 };
       } else {
+        // Handle shopkeeper action sprite on final dialogue
+        const talkingNPCId = prev.talkingNPCId;
+        const talkingNPCIndex = prev.npcs.findIndex(n => n.id === talkingNPCId);
+        if (talkingNPCIndex !== -1 && prev.npcs[talkingNPCIndex].npcType === 'shopkeeper') {
+          const newNpcs = [...prev.npcs];
+          newNpcs[talkingNPCIndex] = { ...newNpcs[talkingNPCIndex], isActionActive: true };
+          
+          // Clear action after brief delay
+          setTimeout(() => {
+            setGameState(s => {
+              const updatedNpcs = [...s.npcs];
+              const idx = updatedNpcs.findIndex(n => n.id === talkingNPCId);
+              if (idx !== -1) {
+                updatedNpcs[idx] = { ...updatedNpcs[idx], isActionActive: false };
+                if (npcsRef.current[idx]) {
+                  npcsRef.current[idx].isActionActive = false;
+                }
+              }
+              return { ...s, npcs: updatedNpcs };
+            });
+          }, 800);
+
+          // Update ref for persistence
+          npcsRef.current[talkingNPCIndex].isActionActive = true;
+
+          return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0, npcs: newNpcs };
+        }
+
         return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0 };
       }
     });
@@ -198,8 +226,8 @@ export function GameEngine() {
     else if (player.dir === 'left') targetX -= TILE_SIZE;
     else if (player.dir === 'right') targetX += TILE_SIZE;
 
-    const nearbyNPCIndex = npcsRef.current.findIndex(npc => {
-      // Use round to avoid tiny floating point differences
+    // Check 1 cell away first
+    let nearbyNPCIndex = npcsRef.current.findIndex(npc => {
       const nx = Math.round(npc.pos.x);
       const ny = Math.round(npc.pos.y);
       const tx = Math.round(targetX);
@@ -207,22 +235,42 @@ export function GameEngine() {
       return nx === tx && ny === ty;
     });
 
+    // If not found, check 2 cells away for shopkeepers
+    if (nearbyNPCIndex === -1) {
+      let farTargetX = player.pos.x;
+      let farTargetY = player.pos.y;
+      if (player.dir === 'up') farTargetY -= TILE_SIZE * 2;
+      else if (player.dir === 'down') farTargetY += TILE_SIZE * 2;
+      else if (player.dir === 'left') farTargetX -= TILE_SIZE * 2;
+      else if (player.dir === 'right') farTargetX += TILE_SIZE * 2;
+
+      nearbyNPCIndex = npcsRef.current.findIndex(npc => {
+        if (npc.npcType !== 'shopkeeper') return false;
+        const nx = Math.round(npc.pos.x);
+        const ny = Math.round(npc.pos.y);
+        const ftx = Math.round(farTargetX);
+        const fty = Math.round(farTargetY);
+        return nx === ftx && ny === fty;
+      });
+    }
+
     if (nearbyNPCIndex !== -1) {
       const nearbyNPC = npcsRef.current[nearbyNPCIndex];
       
-      // Make NPC look at player
-      const dx = player.pos.x - nearbyNPC.pos.x;
-      const dy = player.pos.y - nearbyNPC.pos.y;
-      
+      // Make NPC look at player ONLY if not a shopkeeper
       let newDir: Direction = nearbyNPC.dir;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        newDir = dx > 0 ? 'right' : 'left';
-      } else {
-        newDir = dy > 0 ? 'down' : 'up';
+      if (nearbyNPC.npcType !== 'shopkeeper') {
+        const dx = player.pos.x - nearbyNPC.pos.x;
+        const dy = player.pos.y - nearbyNPC.pos.y;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+          newDir = dx > 0 ? 'right' : 'left';
+        } else {
+          newDir = dy > 0 ? 'down' : 'up';
+        }
+        // Update ref immediately for the renderer
+        npcsRef.current[nearbyNPCIndex].dir = newDir;
       }
-
-      // Update ref immediately for the renderer
-      npcsRef.current[nearbyNPCIndex].dir = newDir;
 
       const dialogueGroups = nearbyNPC.dialogue || [];
       const groupIndex = nearbyNPC.dialogueGroupIndex || 0;

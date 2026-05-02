@@ -12,7 +12,8 @@ export const drawPixelSprite = (
   images?: Record<string, HTMLImageElement>,
   spriteName?: string,
   bumpOffset?: { x: number, y: number },
-  scaleMultiplier: number = 1
+  scaleMultiplier: number = 1,
+  isActionActive: boolean = false
  ) => {
   const x = Math.round(rawX + (bumpOffset?.x || 0));
   const y = Math.round(rawY + (bumpOffset?.y || 0));
@@ -25,7 +26,9 @@ export const drawPixelSprite = (
     
     let spriteKey: string;
     
-    if (isSurfing) {
+    if (isActionActive && spriteName) {
+      spriteKey = `${spriteName}-action`;
+    } else if (isSurfing) {
       // Surfing has no neutral, uses 1 or 2
       const frame = walkFrame === 0 ? 1 : walkFrame; // Default to 1 if 0
       spriteKey = `surf-${dir}-${frame}`;

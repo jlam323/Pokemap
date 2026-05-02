@@ -46,6 +46,8 @@ export interface Entity {
   moveProgress?: number;
   bumpOffset?: Position;
   mapId?: number; // Add mapId to associate NPCs with a map
+  npcType?: 'standard' | 'shopkeeper';
+  isActionActive?: boolean;
 }
 
 export interface GameState {

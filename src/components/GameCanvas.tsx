@@ -189,11 +189,12 @@ export default function GameCanvas() {
         images,
         npc.spriteName,
         npc.bumpOffset,
-        spriteScale
+        spriteScale,
+        npc.isActionActive
       );
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale);
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.isActionActive);
     
     const nearbyNPC = currentState.npcs.find(npc => {
         let targetX = player.pos.x;
