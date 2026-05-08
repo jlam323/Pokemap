@@ -1,5 +1,6 @@
 import { Entity, NPCBase, NPCPlacement } from '../types';
-import { TILE_SIZE } from '../constants';
+import { TILE_SIZE, POKEMON_SPRITE_SHEET } from '../constants';
+import { POKEMON_NPC_BASES, POKEMON_NPC_PLACEMENTS } from './pokenpcs';
 
 export const DEFAULT_NPC_SCALE = 1.5;
 
@@ -109,27 +110,31 @@ export const NPC_PLACEMENTS: NPCPlacement[] = [
   { npcId: 'nursejoy', mapId: 11, pos: { x: TILE_SIZE * 7, y: TILE_SIZE * 2 }, dir: 'down' },
   // PokeMart
   { npcId: 'mysterygift', mapId: 12, pos: { x: TILE_SIZE * 1, y: TILE_SIZE * 3 }, dir: 'down' },
-  { npcId: 'cashier', mapId: 12, pos: { x: TILE_SIZE * 2, y: TILE_SIZE * 2 }, dir: 'right' }
+  { npcId: 'cashier', mapId: 12, pos: { x: TILE_SIZE * 2, y: TILE_SIZE * 2 }, dir: 'right' },
 ];
 
-export const INITIAL_NPCS: Entity[] = NPC_PLACEMENTS.map((placement, index) => {
-  const base = NPC_BASES.find(b => b.id === placement.npcId);
+export const INITIAL_NPCS: Entity[] = [...NPC_PLACEMENTS, ...POKEMON_NPC_PLACEMENTS].map((placement, index) => {
+  const combinedBases = [...NPC_BASES, ...POKEMON_NPC_BASES];
+  const base = combinedBases.find(b => b.id === placement.npcId);
   if (!base) throw new Error(`NPC Template with id ${placement.npcId} not found`);
 
   return {
     id: `${placement.npcId}-${placement.mapId}`,
-    type: 'npc',
+    type: (base.type || 'npc') as 'npc' | 'pokemon',
     pos: placement.pos,
     dir: placement.dir,
     spriteIndex: index + 1,
     spriteName: base.spriteName,
     name: base.name,
     movementType: base.movementType,
-    movementTimer: base.movementType === 'random' ? Math.random() * 5000 : undefined,
+    movementTimer: base.movementType === 'random' 
+      ? Math.random() * (base.type === 'pokemon' ? 2500 : 5000) 
+      : undefined,
     dialogue: base.dialogue,
     dialogueGroupIndex: 0,
     mapId: placement.mapId,
     npcType: base.npcType,
-    actionTrigger: base.actionTrigger
+    actionTrigger: base.actionTrigger,
+    spriteSheet: base.spriteSheet
   };
 });

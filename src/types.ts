@@ -28,12 +28,22 @@ export interface MapConfig {
 
 export interface NPCBase {
   id: string;
+  type?: 'npc' | 'pokemon';
   spriteName: string;
   name: string;
   movementType?: 'stationary' | 'random';
   dialogue?: string[][];
   npcType?: 'standard' | 'shopkeeper';
   actionTrigger?: 'start' | 'end';
+  spriteSheet?: {
+    name: string;
+    index: number;
+    spriteWidth?: number;
+    spriteHeight?: number;
+    padding?: number;
+    spacing?: number;
+    inset?: number;
+  };
 }
 
 export interface NPCPlacement {
@@ -45,7 +55,7 @@ export interface NPCPlacement {
 
 export interface Entity {
   id: string;
-  type: 'player' | 'npc';
+  type: 'player' | 'npc' | 'pokemon';
   pos: Position;
   dir: Direction;
   spriteIndex: number;
@@ -66,6 +76,15 @@ export interface Entity {
   npcType?: 'standard' | 'shopkeeper';
   isActionActive?: boolean;
   actionTrigger?: 'start' | 'end';
+  spriteSheet?: {
+    name: string;
+    index: number;
+    spriteWidth?: number;
+    spriteHeight?: number;
+    padding?: number;
+    spacing?: number;
+    inset?: number;
+  };
 }
 
 export interface Item {
@@ -98,4 +117,5 @@ export interface GameState {
   isTransitioning: boolean;
   hasInteractedWithNPC: boolean;
   hasInteractedWithItem: boolean;
+  debugSprites?: boolean;
 }

@@ -1,20 +1,24 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Entity, GameState, Position, Direction, MapConfig, Item } from '../types';
-import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
+import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE, POKEMON_SPRITE_SHEET } from '../constants';
 import { INITIAL_NPCS } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
-import { INITIAL_ITEMS } from '../data/items';
-import mapsData from '../data/maps.json';
+import { INITIAL_ITEMS, ITEM_SPRITE_CONFIGS } from '../data/items';
+import { ALL_MAPS } from '../data/maps';
 import mapTileGridMain from '../data/mapTileGrid/kanto.json';
 import mapTileGridPokeCenter from '../data/mapTileGrid/pokemon-center.json';
 import mapTileGridPokeMart from '../data/mapTileGrid/pokemart.json';
+import mapTileGridTeamRocket from '../data/mapTileGrid/team-rocket-game-corner.json';
+import mapTileGridPetalburg from '../data/mapTileGrid/petalburg-city.json';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 
-const MAPS = mapsData as MapConfig[];
+const MAPS = ALL_MAPS;
 const TILE_GRIDS: Record<string, number[][]> = {
   'kanto.json': mapTileGridMain,
   'pokemon-center.json': mapTileGridPokeCenter,
-  'pokemart.json': mapTileGridPokeMart
+  'pokemart.json': mapTileGridPokeMart,
+  'team-rocket-game-corner.json': mapTileGridTeamRocket,
+  'petalburg-city.json': mapTileGridPetalburg
 };
 
 export function GameEngine() {
@@ -45,7 +49,8 @@ export function GameEngine() {
       collectedItemIds: [],
       isTransitioning: false,
       hasInteractedWithNPC: false,
-      hasInteractedWithItem: false
+      hasInteractedWithItem: false,
+      debugSprites: false
     };
   });
 
@@ -87,6 +92,7 @@ export function GameEngine() {
     setTimeout(() => {
         const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === targetMap.id);
         const collectedIds = stateRef.current.collectedItemIds;
+        
         const filteredItems = INITIAL_ITEMS.filter(item => 
           item.mapId === targetMap.id && !collectedIds.includes(item.id)
         );
@@ -226,30 +232,45 @@ export function GameEngine() {
   }, []);
 
   const triggerItemAction = useCallback((itemId: string) => {
-    const frames = [1, 2, 3, 4];
+    const currentState = stateRef.current;
+    const itemIdx = currentState.items.findIndex(i => i.id === itemId);
+    if (itemIdx === -1) return;
+    
+    const item = currentState.items[itemIdx];
+    const config = ITEM_SPRITE_CONFIGS[item.spriteName];
+    if (!config || !config.actionSequence) return;
+
+    const sequence = config.actionSequence;
     let currentIdx = 0;
 
     const playNextFrame = () => {
-      if (currentIdx >= frames.length) return;
-      const frameValue = frames[currentIdx];
+      if (currentIdx >= sequence.length) return;
       
       setGameState(prev => {
-        const itemIdx = prev.items.findIndex(i => i.id === itemId);
-        if (itemIdx === -1) return prev;
+        const idx = prev.items.findIndex(i => i.id === itemId);
+        if (idx === -1) return prev;
         
         const newItems = [...prev.items];
-        newItems[itemIdx] = { ...newItems[itemIdx], isActionActive: true, actionFrame: frameValue };
+        // Set isActionActive to true and hold it
+        newItems[idx] = { 
+          ...newItems[idx], 
+          isActionActive: true, 
+          actionFrame: currentIdx + 1 
+        };
         
-        if (itemsRef.current[itemIdx]) {
-          itemsRef.current[itemIdx].isActionActive = true;
-          itemsRef.current[itemIdx].actionFrame = frameValue;
+        if (itemsRef.current[idx]) {
+          itemsRef.current[idx].isActionActive = true;
+          itemsRef.current[idx].actionFrame = currentIdx + 1;
         }
 
-        return { ...prev, items: newItems };
+        return { 
+          ...prev, 
+          items: newItems
+        };
       });
 
-      currentIdx++;
-      if (currentIdx < frames.length) {
+      if (currentIdx < sequence.length - 1) {
+        currentIdx++;
         setTimeout(playNextFrame, 250);
       }
     };
@@ -410,8 +431,9 @@ export function GameEngine() {
           npc.walkFrame = (Math.floor(npc.moveProgress * 4) % 2) + 1;
         }
       } else if (npc.movementType === 'random') {
+        const moveInterval = npc.type === 'pokemon' ? 3000 : 8000;
         npc.movementTimer = (npc.movementTimer || 0) + dt;
-        if (npc.movementTimer >= 10000) {
+        if (npc.movementTimer >= moveInterval) {
           npc.movementTimer = 0;
           
           // Pick random direction

@@ -5,14 +5,12 @@ import { GameEngine } from './GameEngine';
 import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
-import { TILE_SIZE } from '../constants';
+import { TILE_SIZE, POKEMON_SPRITE_SHEET, SPRITE_SHEET_DEFAULTS } from '../constants';
 import { useAssets } from '../hooks/useAssets';
+import { ITEM_SPRITE_CONFIGS } from '../data/items';
+import { ALL_MAPS, TOGGLEABLE_MAPS } from '../data/maps';
 import { drawPixelSprite, drawItemSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
-import mapsData from '../data/maps.json';
-import { MapConfig } from '../types';
-
-const MAPS = mapsData as MapConfig[];
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,6 +26,7 @@ export default function GameCanvas() {
 
   const {
     gameState,
+    setGameState,
     playerRef,
     npcsRef,
     itemsRef,
@@ -178,7 +177,6 @@ export default function GameCanvas() {
     const spriteScale = mapConfig.spriteScaleMultiplier || 1;
 
     npcsRef.current.forEach(npc => {
-      const images = npc.spriteName ? npcImages[npc.spriteName] : undefined;
       drawPixelSprite(
         ctx, 
         npc.pos.x, 
@@ -186,27 +184,33 @@ export default function GameCanvas() {
         npc.dir, 
         npc.walkFrame || 0, 
         npc.isSurfing || false, 
-        images,
+        npcImages, // Pass full npcImages to allow access to _sheets and npc specific records
         npc.spriteName,
         npc.bumpOffset,
         spriteScale,
-        npc.isActionActive
+        npc.isActionActive,
+        npc.spriteSheet
       );
     });
 
     // Draw Items
     itemsRef.current.forEach(item => {
       if (item.isCollected) return;
+      
       const images = itemImages[item.spriteName];
       if (!images) return;
 
+      const config = ITEM_SPRITE_CONFIGS[item.spriteName];
       let frame: HTMLImageElement | undefined;
-      if (item.isActionActive && item.actionFrame) {
-        const frameKey = `${item.spriteName}-action-${item.actionFrame}`;
-        frame = images[frameKey] || images[item.spriteName];
+      
+      if (item.isActionActive && item.actionFrame && config?.actionSequence) {
+        // Clamp the frame to the sequence length to be absolutely sure
+        const frameIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
+        const frameName = config.actionSequence[frameIndex];
+        frame = images[frameName] || images[item.spriteName];
       } else {
-        // Default to the first frame or the one matching spriteName
-        frame = images[item.spriteName] || (Object.values(images)[0] as HTMLImageElement);
+        const idleFrameName = config?.idleFrame || item.spriteName;
+        frame = images[idleFrameName] || (Object.values(images)[0] as HTMLImageElement);
       }
       
       drawItemSprite(
@@ -247,6 +251,81 @@ export default function GameCanvas() {
     }
 
     ctx.restore();
+
+    // --- Sprite Sheet Debug Overlay ---
+    if (currentState.debugSprites && npcImages['_sheets']?.[POKEMON_SPRITE_SHEET]) {
+      const sheetImg = npcImages['_sheets'][POKEMON_SPRITE_SHEET];
+      const scale = 1; // Show at 1x to see exact pixels
+      
+      // Draw background for contrast
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      
+      // Center the sheet
+      const drawX = (ctx.canvas.width - sheetImg.width * scale) / 2;
+      const drawY = (ctx.canvas.height - sheetImg.height * scale) / 2;
+      
+      ctx.drawImage(sheetImg, drawX, drawY, sheetImg.width * scale, sheetImg.height * scale);
+      
+      // Draw Grid
+      const pokenpc = npcsRef.current.find(n => n.type === 'pokemon');
+      if (pokenpc?.spriteSheet) {
+        const defaults = SPRITE_SHEET_DEFAULTS[pokenpc.spriteSheet.name] || { padding: 0, spacing: 0, inset: 0, defaultWidth: 32, defaultHeight: 32 };
+        const { 
+          spriteWidth = defaults.defaultWidth || 32, 
+          spriteHeight = defaults.defaultHeight || 32, 
+          padding = defaults.padding, 
+          spacing = defaults.spacing,
+          inset = defaults.inset || 0
+        } = pokenpc.spriteSheet;
+        const blockWidth = spriteWidth * 2;
+        const blockHeight = spriteHeight * 4;
+        const columnsInSheet = Math.floor((sheetImg.width - padding + spacing) / (blockWidth + spacing || 1));
+        const rowsInSheet = Math.floor((sheetImg.height - padding + spacing) / (blockHeight + spacing || 1));
+
+        ctx.lineWidth = 1;
+        
+        // Draw Block Grids (Red)
+        ctx.strokeStyle = 'red';
+        for (let r = 0; r < rowsInSheet; r++) {
+          for (let c = 0; c < columnsInSheet; c++) {
+            const bx = drawX + padding + c * (blockWidth + spacing);
+            const by = drawY + padding + r * (blockHeight + spacing);
+            ctx.strokeRect(bx, by, blockWidth, blockHeight);
+          }
+        }
+
+        // Draw Sprite Grids
+        for (let r = 0; r < rowsInSheet; r++) {
+          for (let c = 0; c < columnsInSheet; c++) {
+            const bx = drawX + padding + c * (blockWidth + spacing);
+            const by = drawY + padding + r * (blockHeight + spacing);
+            
+            for (let lr = 0; lr < 4; lr++) {
+              for (let lc = 0; lc < 2; lc++) {
+                const sx = bx + lc * spriteWidth;
+                const sy = by + lr * spriteHeight;
+                
+                // Outer Cell (Cyan)
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+                ctx.strokeRect(sx, sy, spriteWidth, spriteHeight);
+
+                // Inset/Crop Area (Yellow)
+                if (inset > 0) {
+                  ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                  ctx.strokeRect(sx + inset, sy + inset, spriteWidth - 2 * inset, spriteHeight - 2 * inset);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('SPRITE DEBUGGER: RED=Block, CYAN=Cell, YELLOW=Inset (Crop)', 20, 30);
+      ctx.fillText('Adjust padding/spacing/inset in constants.ts or pokenpcs.ts', 20, 50);
+    }
   };
 
   const loop = (time: number) => {
@@ -339,9 +418,19 @@ export default function GameCanvas() {
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col gap-2 z-[100] pointer-events-auto">
           <button
             onClick={(e) => {
-              const currentIndex = MAPS.findIndex(m => m.id === gameState.currentMapId);
-              const nextIndex = (currentIndex + 1) % MAPS.length;
-              changeMap(MAPS[nextIndex].id, undefined, true);
+              setGameState(prev => ({ ...prev, debugSprites: !prev.debugSprites }));
+              e.currentTarget.blur();
+              canvasRef.current?.focus();
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-sm uppercase italic text-xs tracking-widest font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-y-0.5"
+          >
+            {gameState.debugSprites ? 'Hide Sprite Grid' : 'Debug Sprite Grid'}
+          </button>
+          <button
+            onClick={(e) => {
+              const currentIndex = TOGGLEABLE_MAPS.findIndex(m => m.id === gameState.currentMapId);
+              const nextIndex = (currentIndex + 1) % TOGGLEABLE_MAPS.length;
+              changeMap(TOGGLEABLE_MAPS[nextIndex].id, undefined, true);
               e.currentTarget.blur();
               canvasRef.current?.focus();
             }}
