@@ -68,7 +68,8 @@ export function useMapSystem({
         const tx = gridX + d.x;
         const ty = gridY + d.y;
         if (tileGrid && ty >= 0 && ty < tileGrid.length && tx >= 0 && tx < tileGrid[0].length) {
-            if (tileGrid[ty][tx] === TileType.WALKABLE) {
+            const tile = tileGrid[ty][tx];
+            if (tile === TileType.WALKABLE || tile === TileType.WATER) {
                 isAutoSteppingRef.current = true;
                 autoStepDirRef.current = d.dir;
                 return true;
@@ -78,11 +79,57 @@ export function useMapSystem({
     return false;
   };
 
+  /**
+   * Teleports the player to a new position on the same map with a fade effect,
+   * keeping the current NPCs and Pokemon state intact.
+   * 
+   * @param targetPos - The pixel position to move the player to.
+   */
+  const teleportPlayer = useCallback((targetPos: Position) => {
+    setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'circle' }));
+
+    setTimeout(() => {
+        const newPlayer = {
+          ...playerRef.current,
+          pos: { ...targetPos },
+          isMoving: false,
+          bumpOffset: { x: 0, y: 0 }
+        };
+
+        playerRef.current = newPlayer;
+        initCollisionMap(newPlayer, npcsRef.current, itemsRef.current);
+
+        setGameState(prev => ({
+          ...prev,
+          player: newPlayer,
+          isTalking: false,
+          talkingNPCId: null,
+          talkingItemId: null,
+          activeDialogue: null,
+          dialogueIndex: 0
+        }));
+
+        startPosRef.current = { ...targetPos };
+        targetPosRef.current = { ...targetPos };
+
+        setTimeout(() => {
+            setGameState(prev => ({ ...prev, isTransitioning: false }));
+
+            const triggered = triggerEntryStep(stateRef.current.currentMapId, targetPos);
+            if (triggered) {
+                setTimeout(() => {
+                    isAutoSteppingRef.current = false;
+                }, MOVE_DURATION + 100);
+            }
+        }, 200);
+    }, 400);
+  }, [setGameState, playerRef, npcsRef, itemsRef, initCollisionMap, startPosRef, targetPosRef, stateRef]);
+
   const changeMap = useCallback((mapId: number, spawnPos?: Position, skipEntryAnimation: boolean = false) => {
     const targetMap = ALL_MAPS.find(m => m.id === mapId);
     if (!targetMap) return;
 
-    setGameState(prev => ({ ...prev, isTransitioning: true }));
+    setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'fade' }));
 
     setTimeout(() => {
         const { npcs, items, playerPos: newPlayerPos } = prepareMapData(
@@ -143,6 +190,7 @@ export function useMapSystem({
 
   return {
     changeMap,
+    teleportPlayer,
     isAutoSteppingRef,
     autoStepDirRef
   };

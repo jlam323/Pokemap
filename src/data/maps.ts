@@ -15,7 +15,25 @@ export const ALL_MAPS: MapConfig[] = [
     },
     groundSpawnCount: 15,
     waterSpawnCount: 15,
-    flyingSpawnCount: 7
+    flyingSpawnCount: 7,
+    teleports: [
+      // Cave Pairs
+      { tileValue: 21, targetPos: { x: 8, y: 12 } },
+      { tileValue: 22, targetPos: { x: 8, y: 19 } },
+
+      { tileValue: 25, targetPos: { x: 88, y: 12 } },
+      { tileValue: 28, targetPos: { x: 28, y: 16 } },
+
+      { tileValue: 26, targetPos: { x: 73, y: 31 } },
+      { tileValue: 27, targetPos: { x: 39, y: 56 } },
+
+      { tileValue: 29, targetPos: { x: 42, y: 10 } },
+      { tileValue: 30, targetPos: { x: 63, y: 7 } },
+
+      // Forest
+      { tileValue: 23, targetPos: { x: 24, y: 17 } },
+      { tileValue: 24, targetPos: { x: 24, y: 21 } }
+    ]
   },
   {
     id: 11,

@@ -9,6 +9,7 @@ export enum TileType {
   WALKABLE = 0,
   BLOCKED = 1,
   WATER = 2,
+  LEDGE = 3,
   PORTAL_BACK = 99,
   PORTAL_MIN = 10
 }
@@ -46,6 +47,11 @@ export interface MapOverlayConfig {
   height: number;
 }
 
+export interface TeleportConfig {
+  tileValue: number;
+  targetPos: Position;
+}
+
 export interface MapConfig {
   id: number;
   name: string;
@@ -62,6 +68,7 @@ export interface MapConfig {
   groundSpawnCount?: number;
   waterSpawnCount?: number;
   flyingSpawnCount?: number;
+  teleports?: TeleportConfig[];
 }
 
 export interface NPCBase {
@@ -108,6 +115,7 @@ export interface Entity {
   spriteIndex: number;
   isMoving?: boolean;
   isSurfing?: boolean;
+  isJumping?: boolean;
   walkFrame?: number;
   dialogue?: string[][];
   dialogueGroupIndex?: number;
@@ -164,6 +172,7 @@ export interface GameState {
   mapReturnPositions: Record<number, Position>; // Track where to return for each map
   collectedItemIds: string[];
   isTransitioning: boolean;
+  transitionType: 'fade' | 'flash' | 'circle';
   hasInteractedWithNPC: boolean;
   hasInteractedWithItem: boolean;
 }

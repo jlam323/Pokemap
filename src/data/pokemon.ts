@@ -173,7 +173,7 @@ export const POKEMON_NPC_BASES: NPCBase[] = [
 
 // Other spawns are random but these will always appear
 export const POKEMON_NPC_PLACEMENTS: NPCPlacement[] = [
-  { npcId: 'pikachu', mapId: 10, pos: { x: TILE_SIZE * 25, y: TILE_SIZE * 29 }, dir: 'down' },
+  { npcId: 'pikachu', mapId: 10, pos: { x: TILE_SIZE * 26, y: TILE_SIZE * 29 }, dir: 'down' },
   { npcId: 'pikachu', mapId: 14, pos: { x: TILE_SIZE * 15, y: TILE_SIZE * 12 }, dir: 'down' },
   { npcId: 'bulbasaur', mapId: 14, pos: { x: TILE_SIZE * 16, y: TILE_SIZE * 12 }, dir: 'down' },
   { npcId: 'charmander', mapId: 14, pos: { x: TILE_SIZE * 17, y: TILE_SIZE * 12 }, dir: 'down' },

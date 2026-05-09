@@ -51,6 +51,7 @@ export function GameEngine() {
 
   const {
     changeMap,
+    teleportPlayer,
     isAutoSteppingRef,
     autoStepDirRef
   } = useMapSystem({
@@ -77,7 +78,8 @@ export function GameEngine() {
     autoStepDirRef,
     keysPressed,
     startPosRef,
-    targetPosRef
+    targetPosRef,
+    teleportPlayer
   });
 
   const update = useCallback((dt: number) => {
@@ -99,6 +101,7 @@ export function GameEngine() {
     handleArrowDown,
     handleArrowUp,
     changeMap,
+    teleportPlayer,
     currentMap
   };
 }

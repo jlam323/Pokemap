@@ -290,13 +290,40 @@ export default function GameCanvas() {
       {/* Map Transition Fade Overlay - Nested within the canvas container */}
       <AnimatePresence>
         {gameState.isTransitioning && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute inset-0 bg-black z-10 pointer-events-none"
-          />
+          <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+            {gameState.transitionType === 'fade' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 bg-black"
+              />
+            )}
+            
+            {gameState.transitionType === 'circle' && (
+              <motion.div
+                initial={{ scale: 0, opacity: 1 }}
+                animate={{ scale: 80, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ 
+                  duration: 0.4,
+                  ease: "easeInOut"
+                }}
+                className="w-10 h-10 bg-black rounded-full origin-center"
+              />
+            )}
+
+            {gameState.transitionType === 'flash' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.1 }}
+                className="absolute inset-0 bg-white"
+              />
+            )}
+          </div>
         )}
       </AnimatePresence>
     </div>

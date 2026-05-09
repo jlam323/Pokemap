@@ -33,6 +33,7 @@ export function getInitialGameState(): GameState {
     mapReturnPositions: {},
     collectedItemIds: [],
     isTransitioning: false,
+    transitionType: 'fade',
     hasInteractedWithNPC: false,
     hasInteractedWithItem: false
   };

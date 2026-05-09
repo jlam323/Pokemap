@@ -10,6 +10,7 @@ interface EntityUpdateProps {
   npcsRef: MutableRefObject<Entity[]>;
   collisionMapRef: MutableRefObject<Set<string>>;
   changeMap: (mapId: number, spawnPos?: Position, skipEntryAnimation?: boolean) => void;
+  teleportPlayer: (targetPos: Position) => void;
   isAutoSteppingRef: MutableRefObject<boolean>;
   autoStepDirRef: MutableRefObject<Direction | null>;
   keysPressed: MutableRefObject<Set<string>>;
@@ -35,6 +36,7 @@ export function useEntityUpdates({
 	npcsRef,
 	collisionMapRef,
 	changeMap,
+	teleportPlayer,
 	isAutoSteppingRef,
 	autoStepDirRef,
 	keysPressed,
@@ -174,12 +176,19 @@ export function useEntityUpdates({
       player.pos.x = startPosRef.current.x + (targetPosRef.current.x - startPosRef.current.x) * progress;
       player.pos.y = startPosRef.current.y + (targetPosRef.current.y - startPosRef.current.y) * progress;
 
+      if (player.isJumping) {
+        const jumpOffset = Math.sin(progress * Math.PI) * 12;
+        player.bumpOffset = { x: 0, y: -jumpOffset };
+      }
+
       if (progress >= 1) {
         const oldX = startPosRef.current.x;
         const oldY = startPosRef.current.y;
         collisionMapRef.current.delete(`${oldX},${oldY}`);
 
         player.isMoving = false;
+        player.isJumping = false;
+        player.bumpOffset = { x: 0, y: 0 };
         player.pos = { ...targetPosRef.current };
         player.walkFrame = player.isSurfing ? footCycleRef.current : 0;
 
@@ -196,7 +205,15 @@ export function useEntityUpdates({
               changeMap(prevMapId);
             }
           } else if (tileValue >= TileType.PORTAL_MIN) {
-            changeMap(tileValue);
+            const teleport = currentMapData.teleports?.find(t => t.tileValue === tileValue);
+            if (teleport) {
+              teleportPlayer({
+                x: teleport.targetPos.x * TILE_SIZE,
+                y: teleport.targetPos.y * TILE_SIZE
+              });
+            } else {
+              changeMap(tileValue);
+            }
           }
         }
       }
@@ -259,6 +276,7 @@ export function useEntityUpdates({
 
         let canMove = inBounds;
         let enteringWater = false;
+        let isJumping = false;
 
         if (inBounds) {
           const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
@@ -268,6 +286,33 @@ export function useEntityUpdates({
                 canMove = false;
             } else if (tileType === TileType.WATER) {
                 enteringWater = true;
+            } else if (tileType === TileType.LEDGE) {
+                if (newDir === 'down') {
+                    const landingGridY = gridY + 1;
+                    const landingGridX = gridX;
+                    const landingPixelY = nextGridY + TILE_SIZE;
+                    const landingPixelX = nextGridX;
+
+                    const landingInBounds = landingGridX >= 0 && landingGridX < mapWidth && landingGridY >= 0 && landingGridY < mapHeight;
+                    
+                    if (landingInBounds) {
+                        const landingTileType = tileGrid[landingGridY][landingGridX];
+                        const landingOccupied = collisionMapRef.current.has(`${landingPixelX},${landingPixelY}`);
+                        
+                        if (landingTileType !== TileType.BLOCKED && !landingOccupied) {
+                            isJumping = true;
+                            nextGridY = landingPixelY;
+                            nextGridX = landingPixelX;
+                            enteringWater = (landingTileType === TileType.WATER);
+                        } else {
+                            canMove = false;
+                        }
+                    } else {
+                        canMove = false;
+                    }
+                } else {
+                    canMove = false;
+                }
             }
           }
         }
@@ -280,6 +325,7 @@ export function useEntityUpdates({
           footCycleRef.current = footCycleRef.current === 1 ? 2 : 1;
           player.walkFrame = footCycleRef.current;
           player.isMoving = true;
+          player.isJumping = isJumping;
           player.isSurfing = enteringWater;
           moveTimerRef.current = 0;
           startPosRef.current = { ...player.pos };
@@ -290,7 +336,7 @@ export function useEntityUpdates({
         }
       }
     }
-  }, [changeMap, playerRef, collisionMapRef, stateRef, isAutoSteppingRef, autoStepDirRef, keysPressed]);
+  }, [changeMap, teleportPlayer, playerRef, collisionMapRef, stateRef, isAutoSteppingRef, autoStepDirRef, keysPressed]);
 
   return {
     updateNPCs,
