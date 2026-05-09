@@ -1,7 +1,9 @@
-import { Entity, NPCBase, NPCPlacement } from '../types';
-import { TILE_SIZE } from '../constants';
+import { Entity, NPCBase, NPCPlacement, Position, Direction, EntityType, MovementType, NPCType, ActionTrigger } from '../types';
+import { TILE_SIZE, POKEMON_SPRITE_SHEET } from '../constants';
+import { POKEMON_NPC_BASES, POKEMON_NPC_PLACEMENTS } from './pokemon';
 
 export const DEFAULT_NPC_SCALE = 1.5;
+export const DEFAULT_POKEMON_SCALE = 1.75;
 
 export interface NPCSpriteConfig {
   name: string;
@@ -54,7 +56,7 @@ export const NPC_BASES: NPCBase[] = [
     id: 'oak',
     spriteName: 'oak',
     name: 'Professor Oak',
-    movementType: 'random',
+    movementType: MovementType.RANDOM,
     dialogue: [
       ["This world is inhabited by creatures called Pokémon"],
       ["Hey! Wait! Don't go out!", "It's unsafe! Wild Pokémon live in tall grass!"],
@@ -65,7 +67,7 @@ export const NPC_BASES: NPCBase[] = [
     id: 'brock',
     spriteName: 'brock',
     name: 'Brock',
-    movementType: 'stationary',
+    movementType: MovementType.STATIONARY,
     dialogue: [
       ["I'm Brock, the Pewter Gym Leader.", "I'm an expert on Rock-type Pokémon."],
       ["I'll use my trusty frying pan...", "as a drying pan!"],
@@ -76,60 +78,70 @@ export const NPC_BASES: NPCBase[] = [
     id: 'nursejoy',
     spriteName: 'nursejoy',
     name: 'Nurse Joy',
-    movementType: 'stationary',
-    npcType: 'shopkeeper',
-    actionTrigger: 'end',
+    movementType: MovementType.STATIONARY,
+    npcType: NPCType.SHOPKEEPER,
+    actionTrigger: ActionTrigger.END,
     dialogue: [["Welcome to the Pokémon Center!", "We can heal your Pokémon to perfect health.", "We hope to see you again!"]]
   },
   {
     id: 'mysterygift',
     spriteName: 'mysterygift',
     name: 'Delivery Man',
-    movementType: 'stationary',
-    npcType: 'shopkeeper',
-    actionTrigger: 'start',
+    movementType: MovementType.STATIONARY,
+    npcType: NPCType.SHOPKEEPER,
+    actionTrigger: ActionTrigger.START,
     dialogue: [["Hey there, there are no mystery gifts today. Come back again another time."]]
   },
   {
     id: 'cashier',
     spriteName: 'cashier',
     name: 'PokeMart Employee',
-    movementType: 'stationary',
-    npcType: 'shopkeeper',
-    actionTrigger: 'start',
+    movementType: MovementType.STATIONARY,
+    npcType: NPCType.SHOPKEEPER,
+    actionTrigger: ActionTrigger.START,
     dialogue: [["Sorry but we're currently sold out of everything.", "...we'll probably be out of stock forever but you could always check again tomorrow!"]]
   }
 ];
 
 export const NPC_PLACEMENTS: NPCPlacement[] = [
-  // Pallet Town / Kanto
+  // Kanto
   { npcId: 'oak', mapId: 10, pos: { x: TILE_SIZE * 22, y: TILE_SIZE * 27 }, dir: 'down' },
   { npcId: 'brock', mapId: 10, pos: { x: TILE_SIZE * 27, y: TILE_SIZE * 33 }, dir: 'down' },
   // Pokemon Center
   { npcId: 'nursejoy', mapId: 11, pos: { x: TILE_SIZE * 7, y: TILE_SIZE * 2 }, dir: 'down' },
   // PokeMart
   { npcId: 'mysterygift', mapId: 12, pos: { x: TILE_SIZE * 1, y: TILE_SIZE * 3 }, dir: 'down' },
-  { npcId: 'cashier', mapId: 12, pos: { x: TILE_SIZE * 2, y: TILE_SIZE * 2 }, dir: 'right' }
+  { npcId: 'cashier', mapId: 12, pos: { x: TILE_SIZE * 2, y: TILE_SIZE * 2 }, dir: 'right' },
 ];
 
-export const INITIAL_NPCS: Entity[] = NPC_PLACEMENTS.map((placement, index) => {
-  const base = NPC_BASES.find(b => b.id === placement.npcId);
-  if (!base) throw new Error(`NPC Template with id ${placement.npcId} not found`);
-
+export const createEntityFromBase = (base: NPCBase, pos: Position, dir: Direction, mapId: number, index: number): Entity => {
   return {
-    id: `${placement.npcId}-${placement.mapId}`,
-    type: 'npc',
-    pos: placement.pos,
-    dir: placement.dir,
-    spriteIndex: index + 1,
+    id: `${base.id}-${mapId}-${index}-${Math.floor(Math.random() * 1000)}`,
+    type: base.type || EntityType.NPC,
+    pos,
+    dir,
+    spriteIndex: index,
     spriteName: base.spriteName,
     name: base.name,
     movementType: base.movementType,
-    movementTimer: base.movementType === 'random' ? Math.random() * 5000 : undefined,
+    movementHabitat: base.movementHabitat,
+    movementTimer: base.movementType === MovementType.RANDOM 
+      ? Math.random() * (base.type === EntityType.POKEMON ? 3000 : 6000) 
+      : undefined,
     dialogue: base.dialogue,
     dialogueGroupIndex: 0,
-    mapId: placement.mapId,
+    mapId: mapId,
     npcType: base.npcType,
-    actionTrigger: base.actionTrigger
+    actionTrigger: base.actionTrigger,
+    scale: base.scale || (base.type === EntityType.POKEMON ? DEFAULT_POKEMON_SCALE : DEFAULT_NPC_SCALE),
+    spriteSheet: base.spriteSheet
   };
+};
+
+export const INITIAL_NPCS: Entity[] = [...NPC_PLACEMENTS, ...POKEMON_NPC_PLACEMENTS].map((placement, index) => {
+  const combinedBases = [...NPC_BASES, ...POKEMON_NPC_BASES];
+  const base = combinedBases.find(b => b.id === placement.npcId);
+  if (!base) throw new Error(`NPC Template with id ${placement.npcId} not found`);
+
+  return createEntityFromBase(base, placement.pos, placement.dir, placement.mapId, index + 1);
 });

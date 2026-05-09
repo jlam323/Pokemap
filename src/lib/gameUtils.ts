@@ -1,4 +1,4 @@
-import { Position, Direction, Entity, Item } from '../types';
+import { Position, Direction, Entity, Item, NPCType } from '../types';
 import { TILE_SIZE } from '../constants';
 
 // Check if the entity is X tiles up/down/left/right
@@ -20,7 +20,7 @@ export function findNearbyNPC(npcs: Entity[], playerPos: Position, playerDir: Di
 
   // Check 2 cells away for shopkeepers
   const target2 = getInteractionTargetPos(playerPos, playerDir, 2);
-  const idx2 = npcs.findIndex(npc => npc.npcType === 'shopkeeper' && isAtPos(npc.pos, target2));
+  const idx2 = npcs.findIndex(npc => npc.npcType === NPCType.SHOPKEEPER && isAtPos(npc.pos, target2));
   if (idx2 !== -1) return { npc: npcs[idx2], index: idx2 };
 
   return null;

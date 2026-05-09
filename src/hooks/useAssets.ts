@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
 import { ITEM_SPRITE_CONFIGS } from '../data/items';
-import mapsData from '../data/maps.json';
-import { MapConfig } from '../types';
+import { ALL_MAPS } from '../data/maps';
+import { POKEMON_SPRITE_SHEET } from '../constants';
 
-const MAPS = mapsData as MapConfig[];
+const MAPS = ALL_MAPS;
 
 export function useAssets() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -96,6 +96,22 @@ export function useAssets() {
       };
       dImg.onerror = () => {
         console.warn(`Dialogue image failed to load: ${frame}`);
+        checkAllLoaded();
+      };
+    });
+
+    // Sprite Sheets
+    [POKEMON_SPRITE_SHEET].forEach(sheet => {
+      imagesToLoad++;
+      const sImg = new Image();
+      sImg.src = `${base}/pokemon/${sheet}.png`;
+      sImg.onload = () => {
+        if (!npcImagesRef.current['_sheets']) npcImagesRef.current['_sheets'] = {};
+        npcImagesRef.current['_sheets'][sheet] = sImg;
+        checkAllLoaded();
+      };
+      sImg.onerror = () => {
+        console.warn(`Sprite sheet failed to load: ${sheet}`);
         checkAllLoaded();
       };
     });

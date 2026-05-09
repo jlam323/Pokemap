@@ -1,4 +1,4 @@
-import { Entity } from '../types';
+import { Entity, EntityType } from '../types';
 import { TILE_SIZE } from '../constants';
 
 export const PLAYER_SCALE = 1.75;
@@ -26,10 +26,11 @@ export const PLAYER_SPRITE_CONFIG: PlayerSpriteConfig = {
 
 export const INITIAL_PLAYER: Entity = {
   id: 'player',
-  type: 'player',
+  type: EntityType.PLAYER,
   pos: { x: TILE_SIZE * 24, y: TILE_SIZE * 31 },
   dir: 'down',
   spriteIndex: 0,
+  scale: PLAYER_SCALE,
   isMoving: false,
   walkFrame: 0,
 };

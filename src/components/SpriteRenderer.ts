@@ -1,7 +1,7 @@
 import { Direction } from '../types';
 import { NPC_SPRITE_CONFIGS, DEFAULT_NPC_SCALE } from '../data/npcs';
 import { PLAYER_SCALE, SURF_SCALE_MODIFIER } from '../data/player';
-import { TILE_SIZE } from '../constants';
+import { TILE_SIZE, SPRITE_SHEET_DEFAULTS } from '../constants';
 
 export const drawPixelSprite = (
   ctx: CanvasRenderingContext2D, 
@@ -10,20 +10,50 @@ export const drawPixelSprite = (
   dir: Direction, 
   walkFrame: number = 0, 
   isSurfing: boolean = false,
-  images?: Record<string, HTMLImageElement>,
+  images?: Record<string, any>,
   spriteName?: string,
   bumpOffset?: { x: number, y: number },
   scaleMultiplier: number = 1,
-  isActionActive: boolean = false
+  entityScale?: number,
+  isActionActive: boolean = false,
+  spriteSheet?: {
+    name: string;
+    index: number;
+    spriteWidth: number;
+    spriteHeight: number;
+    padding?: number;
+    spacing?: number;
+    inset?: number;
+  }
  ) => {
   const x = Math.round(rawX + (bumpOffset?.x || 0));
   const y = Math.round(rawY + (bumpOffset?.y || 0));
   
+  // Handle Sprite Sheets
+  if (images && spriteSheet && images['_sheets']?.[spriteSheet.name]) {
+    drawSheetSprite(
+      ctx,
+      images['_sheets'][spriteSheet.name],
+      spriteSheet,
+      x,
+      y,
+      dir,
+      walkFrame,
+      scaleMultiplier,
+      entityScale,
+      spriteName
+    );
+    return;
+  }
+
   // If we have images, use them first
   if (images) {
+    const spriteImages = spriteName ? images[spriteName] : images;
+    if (!spriteImages) return;
+
     let scaleBaseValue = PLAYER_SCALE;
     if (spriteName) {
-      scaleBaseValue = NPC_SPRITE_CONFIGS[spriteName]?.scale || (images[spriteName] ? 1 : DEFAULT_NPC_SCALE);
+      scaleBaseValue = entityScale || NPC_SPRITE_CONFIGS[spriteName]?.scale || (spriteImages[spriteName] ? 1 : DEFAULT_NPC_SCALE);
     }
     const baseScale = scaleBaseValue * scaleMultiplier;
     const scale = isSurfing ? baseScale * SURF_SCALE_MODIFIER : baseScale;
@@ -31,7 +61,7 @@ export const drawPixelSprite = (
     
     let spriteKey: string;
     
-    if (images[spriteName || '']) {
+    if (spriteImages[spriteName || '']) {
       spriteKey = spriteName || '';
     } else if (isActionActive && spriteName) {
       spriteKey = `${spriteName}-action`;
@@ -50,7 +80,7 @@ export const drawPixelSprite = (
       else if (walkFrame === 2) spriteKey = `walking-${dir}-2`;
     }
     
-    const img = images[spriteKey];
+    const img = spriteImages[spriteKey];
     if (img) {
       ctx.imageSmoothingEnabled = false;
       
@@ -66,6 +96,76 @@ export const drawPixelSprite = (
       ctx.drawImage(img, x - xOffset, y - yOffsetInner, displayWidth, displayHeight);
     }
   }
+};
+
+const drawSheetSprite = (
+  ctx: CanvasRenderingContext2D,
+  sheetImg: HTMLImageElement,
+  sheetConfig: { name: string; index: number; spriteWidth?: number; spriteHeight?: number; padding?: number; spacing?: number; inset?: number },
+  x: number,
+  y: number,
+  dir: Direction,
+  walkFrame: number,
+  scaleMultiplier: number,
+  entityScale?: number,
+  spriteName?: string
+) => {
+  const defaults = SPRITE_SHEET_DEFAULTS[sheetConfig.name] || { padding: 0, spacing: 0, inset: 0, defaultWidth: 32, defaultHeight: 32 };
+  const { 
+    index, 
+    spriteWidth = defaults.defaultWidth || 32, 
+    spriteHeight = defaults.defaultHeight || 32, 
+    padding = defaults.padding, 
+    spacing = defaults.spacing,
+    inset = defaults.inset || 0
+  } = sheetConfig;
+  
+  // Each entity block is 2 columns x 4 rows
+  const blockWidth = spriteWidth * 2;
+  const blockHeight = spriteHeight * 4;
+
+  const columnsInSheet = Math.round((sheetImg.width - padding + spacing) / (blockWidth + spacing));
+  const blockX = padding + (index % columnsInSheet) * (blockWidth + spacing);
+  const blockY = padding + Math.floor(index / columnsInSheet) * (blockHeight + spacing);
+
+  // Calculate local sprite offset within the 2x4 block
+  // Pattern: [[up-1, left-1], [up-2, left-2], [down-1, right-1], [down-2, right-2]]
+  let localX = 0;
+  let localY = 0;
+  const frame = walkFrame === 0 ? 0 : walkFrame - 1; // 0 or 1
+
+  if (dir === 'up') {
+    localX = 0;
+    localY = frame;
+  } else if (dir === 'left') {
+    localX = 1;
+    localY = frame;
+  } else if (dir === 'down') {
+    localX = 0;
+    localY = 2 + frame;
+  } else if (dir === 'right') {
+    localX = 1;
+    localY = 2 + frame;
+  }
+
+  const srcX = blockX + localX * spriteWidth + inset;
+  const srcY = blockY + localY * spriteHeight + inset;
+  const srcW = spriteWidth - 2 * inset;
+  const srcH = spriteHeight - 2 * inset;
+
+  const scale = entityScale || NPC_SPRITE_CONFIGS[spriteName || '']?.scale || DEFAULT_NPC_SCALE;
+  const size = srcH * scale * scaleMultiplier;
+  const displayWidth = srcW * scale * scaleMultiplier;
+  
+  const xOffset = (displayWidth - 32) / 2;
+  const yOffsetInner = (size - 32) / 2 + 4;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    sheetImg,
+    srcX, srcY, srcW, srcH,
+    x - xOffset, y - yOffsetInner, displayWidth, size
+  );
 };
 
 export const drawItemSprite = (

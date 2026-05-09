@@ -5,14 +5,13 @@ import { GameEngine } from './GameEngine';
 import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
-import { TILE_SIZE } from '../constants';
+import { TILE_SIZE, POKEMON_SPRITE_SHEET, SPRITE_SHEET_DEFAULTS } from '../constants';
 import { useAssets } from '../hooks/useAssets';
+import { ITEM_SPRITE_CONFIGS } from '../data/items';
+import { ALL_MAPS, TOGGLEABLE_MAPS } from '../data/maps';
 import { drawPixelSprite, drawItemSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
-import mapsData from '../data/maps.json';
-import { MapConfig } from '../types';
-
-const MAPS = mapsData as MapConfig[];
+import { EntityType } from '../types';
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,6 +27,7 @@ export default function GameCanvas() {
 
   const {
     gameState,
+    setGameState,
     playerRef,
     npcsRef,
     itemsRef,
@@ -178,7 +178,6 @@ export default function GameCanvas() {
     const spriteScale = mapConfig.spriteScaleMultiplier || 1;
 
     npcsRef.current.forEach(npc => {
-      const images = npc.spriteName ? npcImages[npc.spriteName] : undefined;
       drawPixelSprite(
         ctx, 
         npc.pos.x, 
@@ -186,27 +185,34 @@ export default function GameCanvas() {
         npc.dir, 
         npc.walkFrame || 0, 
         npc.isSurfing || false, 
-        images,
+        npcImages, // Pass full npcImages to allow access to _sheets and npc specific records
         npc.spriteName,
         npc.bumpOffset,
         spriteScale,
-        npc.isActionActive
+        npc.scale,
+        npc.isActionActive,
+        npc.spriteSheet
       );
     });
 
     // Draw Items
     itemsRef.current.forEach(item => {
       if (item.isCollected) return;
+      
       const images = itemImages[item.spriteName];
       if (!images) return;
 
+      const config = ITEM_SPRITE_CONFIGS[item.spriteName];
       let frame: HTMLImageElement | undefined;
-      if (item.isActionActive && item.actionFrame) {
-        const frameKey = `${item.spriteName}-action-${item.actionFrame}`;
-        frame = images[frameKey] || images[item.spriteName];
+      
+      if (item.isActionActive && item.actionFrame && config?.actionSequence) {
+        // Clamp the frame to the sequence length to be absolutely sure
+        const frameIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
+        const frameName = config.actionSequence[frameIndex];
+        frame = images[frameName] || images[item.spriteName];
       } else {
-        // Default to the first frame or the one matching spriteName
-        frame = images[item.spriteName] || (Object.values(images)[0] as HTMLImageElement);
+        const idleFrameName = config?.idleFrame || item.spriteName;
+        frame = images[idleFrameName] || (Object.values(images)[0] as HTMLImageElement);
       }
       
       drawItemSprite(
@@ -218,7 +224,7 @@ export default function GameCanvas() {
       );
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.isActionActive);
+    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.scale, player.isActionActive);
     
     const nearbyNPCResult = findNearbyNPC(npcsRef.current, player.pos, player.dir);
     const nearbyNPC = nearbyNPCResult ? nearbyNPCResult.npc : null;
@@ -226,7 +232,7 @@ export default function GameCanvas() {
     const nearbyItemResult = findNearbyItem(itemsRef.current, player.pos, player.dir);
     const nearbyItem = nearbyItemResult ? nearbyItemResult.item : null;
 
-    const isNearbyNPC = !!nearbyNPC;
+    const isNearbyNPC = !!nearbyNPC && nearbyNPC.type === EntityType.NPC;
     const isNearbyItem = !!nearbyItem;
 
     const shouldShowPrompt = 
@@ -339,9 +345,19 @@ export default function GameCanvas() {
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col gap-2 z-[100] pointer-events-auto">
           <button
             onClick={(e) => {
-              const currentIndex = MAPS.findIndex(m => m.id === gameState.currentMapId);
-              const nextIndex = (currentIndex + 1) % MAPS.length;
-              changeMap(MAPS[nextIndex].id, undefined, true);
+              setGameState(prev => ({ ...prev, debugSprites: !prev.debugSprites }));
+              e.currentTarget.blur();
+              canvasRef.current?.focus();
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-sm uppercase italic text-xs tracking-widest font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-y-0.5"
+          >
+            {gameState.debugSprites ? 'Hide Sprite Grid' : 'Debug Sprite Grid'}
+          </button>
+          <button
+            onClick={(e) => {
+              const currentIndex = TOGGLEABLE_MAPS.findIndex(m => m.id === gameState.currentMapId);
+              const nextIndex = (currentIndex + 1) % TOGGLEABLE_MAPS.length;
+              changeMap(TOGGLEABLE_MAPS[nextIndex].id, undefined, true);
               e.currentTarget.blur();
               canvasRef.current?.focus();
             }}

@@ -1,4 +1,39 @@
 
+export enum Habitat {
+  GROUND = 'ground',
+  WATER = 'water',
+  FLYING = 'flying'
+}
+
+export enum TileType {
+  WALKABLE = 0,
+  BLOCKED = 1,
+  WATER = 2,
+  PORTAL_BACK = 99,
+  PORTAL_MIN = 10
+}
+
+export enum EntityType {
+  PLAYER = 'player',
+  NPC = 'npc',
+  POKEMON = 'pokemon'
+}
+
+export enum MovementType {
+  STATIONARY = 'stationary',
+  RANDOM = 'random'
+}
+
+export enum NPCType {
+  STANDARD = 'standard',
+  SHOPKEEPER = 'shopkeeper'
+}
+
+export enum ActionTrigger {
+  START = 'start',
+  END = 'end'
+}
+
 export interface Position {
   x: number;
   y: number;
@@ -24,16 +59,31 @@ export interface MapConfig {
     gbc: MapOverlayConfig;
     gba: MapOverlayConfig;
   };
+  groundSpawnCount?: number;
+  waterSpawnCount?: number;
+  flyingSpawnCount?: number;
 }
 
 export interface NPCBase {
   id: string;
+  type?: EntityType.NPC | EntityType.POKEMON;
   spriteName: string;
   name: string;
-  movementType?: 'stationary' | 'random';
+  movementType?: MovementType;
+  movementHabitat?: Habitat;
   dialogue?: string[][];
-  npcType?: 'standard' | 'shopkeeper';
-  actionTrigger?: 'start' | 'end';
+  npcType?: NPCType;
+  actionTrigger?: ActionTrigger;
+  scale?: number;
+  spriteSheet?: {
+    name: string;
+    index: number;
+    spriteWidth?: number;
+    spriteHeight?: number;
+    padding?: number;
+    spacing?: number;
+    inset?: number;
+  };
 }
 
 export interface NPCPlacement {
@@ -45,7 +95,7 @@ export interface NPCPlacement {
 
 export interface Entity {
   id: string;
-  type: 'player' | 'npc';
+  type: EntityType;
   pos: Position;
   dir: Direction;
   spriteIndex: number;
@@ -56,16 +106,27 @@ export interface Entity {
   dialogueGroupIndex?: number;
   name?: string;
   spriteName?: string;
-  movementType?: 'stationary' | 'random';
+  movementType?: MovementType;
+  movementHabitat?: Habitat;
   movementTimer?: number;
   startPos?: Position;
   targetPos?: Position;
   moveProgress?: number;
   bumpOffset?: Position;
   mapId?: number; // Add mapId to associate NPCs with a map
-  npcType?: 'standard' | 'shopkeeper';
+  npcType?: NPCType;
   isActionActive?: boolean;
-  actionTrigger?: 'start' | 'end';
+  actionTrigger?: ActionTrigger;
+  scale?: number;
+  spriteSheet?: {
+    name: string;
+    index: number;
+    spriteWidth?: number;
+    spriteHeight?: number;
+    padding?: number;
+    spacing?: number;
+    inset?: number;
+  };
 }
 
 export interface Item {

@@ -24,9 +24,11 @@ export const INITIAL_ITEMS: Item[] = [
   }
 ];
 
-export const ITEM_SPRITE_CONFIGS: Record<string, { basePath: string, frames: string[] }> = {
+export const ITEM_SPRITE_CONFIGS: Record<string, { basePath: string, frames: string[], idleFrame: string, actionSequence: string[] }> = {
   'pokeball': {
     basePath: '/item',
-    frames: ['pokeball', 'pokeball-action-1', 'pokeball-action-2', 'pokeball-action-3', 'pokeball-action-4']
+    frames: ['pokeball', 'pokeball-action-1', 'pokeball-action-2', 'pokeball-action-3', 'pokeball-action-4'],
+    idleFrame: 'pokeball',
+    actionSequence: ['pokeball-action-1', 'pokeball-action-2', 'pokeball-action-1', 'pokeball-action-2', 'pokeball-action-3', 'pokeball-action-4']
   }
 };

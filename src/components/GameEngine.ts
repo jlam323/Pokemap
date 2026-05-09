@@ -1,20 +1,89 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Entity, GameState, Position, Direction, MapConfig, Item } from '../types';
-import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
-import { INITIAL_NPCS } from '../data/npcs';
+import { Entity, GameState, Position, Direction, MapConfig, Item, Habitat, TileType, EntityType, MovementType, NPCType, ActionTrigger } from '../types';
+import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE, POKEMON_SPRITE_SHEET } from '../constants';
+import { INITIAL_NPCS, createEntityFromBase } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
-import { INITIAL_ITEMS } from '../data/items';
-import mapsData from '../data/maps.json';
+import { INITIAL_ITEMS, ITEM_SPRITE_CONFIGS } from '../data/items';
+import { ALL_MAPS } from '../data/maps';
+import { POKEMON_NPC_BASES } from '../data/pokemon';
 import mapTileGridMain from '../data/mapTileGrid/kanto.json';
 import mapTileGridPokeCenter from '../data/mapTileGrid/pokemon-center.json';
 import mapTileGridPokeMart from '../data/mapTileGrid/pokemart.json';
+import mapTileGridTeamRocket from '../data/mapTileGrid/team-rocket-game-corner.json';
+import mapTileGridPetalburg from '../data/mapTileGrid/petalburg-city.json';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 
-const MAPS = mapsData as MapConfig[];
+const MAPS = ALL_MAPS;
 const TILE_GRIDS: Record<string, number[][]> = {
   'kanto.json': mapTileGridMain,
   'pokemon-center.json': mapTileGridPokeCenter,
-  'pokemart.json': mapTileGridPokeMart
+  'pokemart.json': mapTileGridPokeMart,
+  'team-rocket-game-corner.json': mapTileGridTeamRocket,
+  'petalburg-city.json': mapTileGridPetalburg
+};
+
+const spawnDynamicPokemon = (map: MapConfig, existingNpcs: Entity[], player: Entity, items: Item[], collisionMap: Set<string>) => {
+  const dynamicSpawns: Entity[] = [];
+  const tileGrid = TILE_GRIDS[map.gridDataFile];
+  if (!tileGrid) return dynamicSpawns;
+
+  const currentCollisionMap = new Set(collisionMap);
+
+  const spawnCounts = {
+    [Habitat.GROUND]: map.groundSpawnCount || 0,
+    [Habitat.WATER]: map.waterSpawnCount || 0,
+    [Habitat.FLYING]: map.flyingSpawnCount || 0,
+  };
+
+  const pokemonByHabitat = {
+    [Habitat.GROUND]: POKEMON_NPC_BASES.filter(p => !p.movementHabitat || p.movementHabitat === Habitat.GROUND),
+    [Habitat.WATER]: POKEMON_NPC_BASES.filter(p => p.movementHabitat === Habitat.WATER),
+    [Habitat.FLYING]: POKEMON_NPC_BASES.filter(p => p.movementHabitat === Habitat.FLYING),
+  };
+
+  Object.entries(spawnCounts).forEach(([habitat, count]) => {
+    const habitatType = habitat as Habitat;
+    const availablePokemon = pokemonByHabitat[habitatType];
+    if (availablePokemon.length === 0 || count <= 0) return;
+
+    // Find valid tiles
+    const validTiles: Position[] = [];
+    tileGrid.forEach((row, y) => {
+      row.forEach((tileType, x) => {
+        let ok = false;
+        if (habitatType === Habitat.GROUND) ok = (tileType === TileType.WALKABLE);
+        else if (habitatType === Habitat.WATER) ok = (tileType === TileType.WATER);
+        else if (habitatType === Habitat.FLYING) ok = (tileType === TileType.WALKABLE || tileType === TileType.WATER);
+
+        if (ok) {
+          const posX = x * TILE_SIZE;
+          const posY = y * TILE_SIZE;
+          if (!currentCollisionMap.has(`${posX},${posY}`)) {
+            validTiles.push({ x: posX, y: posY });
+          }
+        }
+      });
+    });
+
+    // Shuffle and pick
+    for (let i = 0; i < count && validTiles.length > 0; i++) {
+      const tileIndex = Math.floor(Math.random() * validTiles.length);
+      const pos = validTiles.splice(tileIndex, 1)[0];
+      const pokemonBase = availablePokemon[Math.floor(Math.random() * availablePokemon.length)];
+      
+      const newPokemon = createEntityFromBase(
+        pokemonBase, 
+        pos, 
+        'down', 
+        map.id, 
+        existingNpcs.length + dynamicSpawns.length + 500
+      );
+      dynamicSpawns.push(newPokemon);
+      currentCollisionMap.add(`${pos.x},${pos.y}`);
+    }
+  });
+
+  return dynamicSpawns;
 };
 
 export function GameEngine() {
@@ -22,17 +91,28 @@ export function GameEngine() {
     const initialMap = MAPS[0];
     const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === initialMap.id);
     const filteredItems = INITIAL_ITEMS.filter(item => item.mapId === initialMap.id);
+    
+    const playerPos = { 
+      x: initialMap.startPos.x * TILE_SIZE, 
+      y: initialMap.startPos.y * TILE_SIZE 
+    };
+
+    const initialCollisionMap = new Set<string>();
+    initialCollisionMap.add(`${playerPos.x},${playerPos.y}`);
+    filteredNpcs.forEach(n => initialCollisionMap.add(`${n.pos.x},${n.pos.y}`));
+    filteredItems.forEach(i => initialCollisionMap.add(`${i.pos.x},${i.pos.y}`));
+
+    const dynamicPokemon = spawnDynamicPokemon(initialMap, filteredNpcs, { ...INITIAL_PLAYER, pos: playerPos }, filteredItems, initialCollisionMap);
+    const allNpcs = [...filteredNpcs, ...dynamicPokemon];
+
     const playerWithStartPos = {
       ...INITIAL_PLAYER,
-      pos: { 
-        x: initialMap.startPos.x * TILE_SIZE, 
-        y: initialMap.startPos.y * TILE_SIZE 
-      }
+      pos: playerPos
     };
 
     return {
       player: playerWithStartPos,
-      npcs: filteredNpcs,
+      npcs: allNpcs,
       items: filteredItems,
       isTalking: false,
       talkingNPCId: null,
@@ -87,6 +167,7 @@ export function GameEngine() {
     setTimeout(() => {
         const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === targetMap.id);
         const collectedIds = stateRef.current.collectedItemIds;
+        
         const filteredItems = INITIAL_ITEMS.filter(item => 
           item.mapId === targetMap.id && !collectedIds.includes(item.id)
         );
@@ -103,15 +184,23 @@ export function GameEngine() {
           bumpOffset: { x: 0, y: 0 }
         };
 
+        const currentCollisionMap = new Set<string>();
+        currentCollisionMap.add(`${newPlayerPos.x},${newPlayerPos.y}`);
+        filteredNpcs.forEach(n => currentCollisionMap.add(`${n.pos.x},${n.pos.y}`));
+        filteredItems.forEach(i => currentCollisionMap.add(`${i.pos.x},${i.pos.y}`));
+
+        const dynamicPokemon = spawnDynamicPokemon(targetMap, filteredNpcs, newPlayer, filteredItems, currentCollisionMap);
+        const allNpcs = [...filteredNpcs, ...dynamicPokemon];
+
         playerRef.current = newPlayer;
-        npcsRef.current = filteredNpcs;
+        npcsRef.current = allNpcs;
         itemsRef.current = filteredItems;
-        initCollisionMap(newPlayer, filteredNpcs, filteredItems);
+        initCollisionMap(newPlayer, allNpcs, filteredItems);
 
         setGameState(prev => ({
           ...prev,
           player: newPlayer,
-          npcs: filteredNpcs,
+          npcs: allNpcs,
           items: filteredItems,
           currentMapId: mapId,
           previousMapId: prev.currentMapId,
@@ -171,7 +260,7 @@ export function GameEngine() {
         const tx = gridX + d.x;
         const ty = gridY + d.y;
         if (ty >= 0 && ty < tileGrid.length && tx >= 0 && tx < tileGrid[0].length) {
-            if (tileGrid[ty][tx] === 0) {
+            if (tileGrid[ty][tx] === TileType.WALKABLE) {
                 isAutoSteppingRef.current = true;
                 autoStepDirRef.current = d.dir;
                 return true;
@@ -226,30 +315,45 @@ export function GameEngine() {
   }, []);
 
   const triggerItemAction = useCallback((itemId: string) => {
-    const frames = [1, 2, 3, 4];
+    const currentState = stateRef.current;
+    const itemIdx = currentState.items.findIndex(i => i.id === itemId);
+    if (itemIdx === -1) return;
+    
+    const item = currentState.items[itemIdx];
+    const config = ITEM_SPRITE_CONFIGS[item.spriteName];
+    if (!config || !config.actionSequence) return;
+
+    const sequence = config.actionSequence;
     let currentIdx = 0;
 
     const playNextFrame = () => {
-      if (currentIdx >= frames.length) return;
-      const frameValue = frames[currentIdx];
+      if (currentIdx >= sequence.length) return;
       
       setGameState(prev => {
-        const itemIdx = prev.items.findIndex(i => i.id === itemId);
-        if (itemIdx === -1) return prev;
+        const idx = prev.items.findIndex(i => i.id === itemId);
+        if (idx === -1) return prev;
         
         const newItems = [...prev.items];
-        newItems[itemIdx] = { ...newItems[itemIdx], isActionActive: true, actionFrame: frameValue };
+        // Set isActionActive to true and hold it
+        newItems[idx] = { 
+          ...newItems[idx], 
+          isActionActive: true, 
+          actionFrame: currentIdx + 1 
+        };
         
-        if (itemsRef.current[itemIdx]) {
-          itemsRef.current[itemIdx].isActionActive = true;
-          itemsRef.current[itemIdx].actionFrame = frameValue;
+        if (itemsRef.current[idx]) {
+          itemsRef.current[idx].isActionActive = true;
+          itemsRef.current[idx].actionFrame = currentIdx + 1;
         }
 
-        return { ...prev, items: newItems };
+        return { 
+          ...prev, 
+          items: newItems
+        };
       });
 
-      currentIdx++;
-      if (currentIdx < frames.length) {
+      if (currentIdx < sequence.length - 1) {
+        currentIdx++;
         setTimeout(playNextFrame, 250);
       }
     };
@@ -292,7 +396,7 @@ export function GameEngine() {
         const talkingNPCIndex = prev.npcs.findIndex(n => n.id === talkingNPCId);
         if (talkingNPCId && talkingNPCIndex !== -1) {
           const npc = prev.npcs[talkingNPCIndex];
-          if (npc.npcType === 'shopkeeper' && npc.actionTrigger === 'end') {
+          if (npc.npcType === NPCType.SHOPKEEPER && npc.actionTrigger === ActionTrigger.END) {
             triggerNPCAction(talkingNPCId);
           }
         }
@@ -339,7 +443,7 @@ export function GameEngine() {
       const currentDialogueGroup = dialogueGroups[groupIndex % dialogueGroups.length] || [];
 
       // Trigger start action if applicable
-      if (nearbyNPC.npcType === 'shopkeeper' && nearbyNPC.actionTrigger === 'start') {
+      if (nearbyNPC.npcType === NPCType.SHOPKEEPER && nearbyNPC.actionTrigger === ActionTrigger.START) {
         triggerNPCAction(nearbyNPC.id);
       }
 
@@ -409,9 +513,10 @@ export function GameEngine() {
           // Cycle walk frame during move
           npc.walkFrame = (Math.floor(npc.moveProgress * 4) % 2) + 1;
         }
-      } else if (npc.movementType === 'random') {
+      } else if (npc.movementType === MovementType.RANDOM) {
+        const moveInterval = npc.type === EntityType.POKEMON ? 3000 : 8000;
         npc.movementTimer = (npc.movementTimer || 0) + dt;
-        if (npc.movementTimer >= 10000) {
+        if (npc.movementTimer >= moveInterval) {
           npc.movementTimer = 0;
           
           // Pick random direction
@@ -433,10 +538,24 @@ export function GameEngine() {
           const mapWidth = currentMapData.overlays.none.width;
           const mapHeight = currentMapData.overlays.none.height;
           
-          const inBounds = gridX >= 0 && gridX < mapWidth && gridY >= 0 && gridY < mapHeight;
+        const inBounds = gridX >= 0 && gridX < mapWidth && gridY >= 0 && gridY < mapHeight;
 
+        if (inBounds) {
           const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
-          if (inBounds && tileGrid[gridY][gridX] === 0) {
+          const tileType = tileGrid[gridY][gridX];
+          
+          let habitatOk = false;
+          const habitat = npc.movementHabitat || Habitat.GROUND;
+          
+          if (habitat === Habitat.FLYING) {
+            habitatOk = (tileType === TileType.WALKABLE || tileType === TileType.WATER);
+          } else if (habitat === Habitat.WATER) {
+            habitatOk = (tileType === TileType.WATER);
+          } else {
+            habitatOk = (tileType === TileType.WALKABLE);
+          }
+
+          if (habitatOk) {
             const isOccupied = collisionMapRef.current.has(`${nextX},${nextY}`);
 
             if (!isOccupied) {
@@ -450,6 +569,7 @@ export function GameEngine() {
               npc.moveProgress = 0;
             }
           }
+        }
         }
       }
     });
@@ -507,12 +627,12 @@ export function GameEngine() {
         
         if (tileGrid && tileGrid[gridY]) {
           const tileValue = tileGrid[gridY][gridX];
-          if (tileValue === 99) {
+          if (tileValue === TileType.PORTAL_BACK) {
             const prevMapId = stateRef.current.previousMapId;
             if (prevMapId !== null) {
               changeMap(prevMapId);
             }
-          } else if (tileValue >= 10) {
+          } else if (tileValue >= TileType.PORTAL_MIN) {
             changeMap(tileValue);
           }
         }
@@ -584,9 +704,9 @@ export function GameEngine() {
         if (inBounds) {
           const tileGrid = TILE_GRIDS[currentMapData.gridDataFile];
           const tileType = tileGrid[gridY][gridX];
-          if (tileType === 1) {
+          if (tileType === TileType.BLOCKED) {
             canMove = false;
-          } else if (tileType === 2) {
+          } else if (tileType === TileType.WATER) {
             enteringWater = true;
           }
         }
