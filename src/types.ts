@@ -93,6 +93,13 @@ export interface NPCPlacement {
   dir: Direction;
 }
 
+export interface NPCSpriteConfig {
+  name: string;
+  basePath: string;
+  frames: string[];
+  scale?: number;
+}
+
 export interface Entity {
   id: string;
   type: EntityType;

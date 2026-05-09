@@ -7,6 +7,21 @@ import { POKEMON_SPRITE_SHEET } from '../constants';
 
 const MAPS = ALL_MAPS;
 
+/**
+ * Custom hook to pre-load and manage game assets (images, sprites, maps).
+ * 
+ * This hook handles the loading of:
+ * - Map backgrounds
+ * - Player sprite frames
+ * - NPC sprite frames
+ * - Item sprite frames
+ * - Dialogue/UI assets
+ * - Pokemon sprite sheets
+ * 
+ * It tracks the loading progress and exposes an `isLoaded` flag when all assets are ready.
+ * 
+ * @returns {Object} An object containing the loading status and references to loaded images.
+ */
 export function useAssets() {
   const [isLoaded, setIsLoaded] = useState(false);
   const playerImagesRef = useRef<Record<string, HTMLImageElement>>({});

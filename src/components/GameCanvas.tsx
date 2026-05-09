@@ -345,16 +345,6 @@ export default function GameCanvas() {
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col gap-2 z-[100] pointer-events-auto">
           <button
             onClick={(e) => {
-              setGameState(prev => ({ ...prev, debugSprites: !prev.debugSprites }));
-              e.currentTarget.blur();
-              canvasRef.current?.focus();
-            }}
-            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-sm uppercase italic text-xs tracking-widest font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition-transform active:translate-y-0.5"
-          >
-            {gameState.debugSprites ? 'Hide Sprite Grid' : 'Debug Sprite Grid'}
-          </button>
-          <button
-            onClick={(e) => {
               const currentIndex = TOGGLEABLE_MAPS.findIndex(m => m.id === gameState.currentMapId);
               const nextIndex = (currentIndex + 1) % TOGGLEABLE_MAPS.length;
               changeMap(TOGGLEABLE_MAPS[nextIndex].id, undefined, true);

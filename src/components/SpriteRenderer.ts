@@ -1,7 +1,7 @@
 import { Direction } from '../types';
-import { NPC_SPRITE_CONFIGS, DEFAULT_NPC_SCALE } from '../data/npcs';
+import { NPC_SPRITE_CONFIGS } from '../data/npcs';
 import { PLAYER_SCALE, SURF_SCALE_MODIFIER } from '../data/player';
-import { TILE_SIZE, SPRITE_SHEET_DEFAULTS } from '../constants';
+import { TILE_SIZE, SPRITE_SHEET_DEFAULTS, DEFAULT_NPC_SCALE } from '../constants';
 
 export const drawPixelSprite = (
   ctx: CanvasRenderingContext2D, 

@@ -9,7 +9,7 @@ export const INITIAL_ITEMS: Item[] = [
     spriteIndex: 0,
     spriteName: 'pokeball',
     dialogue: ["You found a Poké Ball!", "You open it up...", "Oh no, there was a job application inside!!"],
-    mapId: 10, // Pallet Town
+    mapId: 10, // Kanto
     scale: 1.5
   },
   {

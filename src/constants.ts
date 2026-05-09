@@ -5,6 +5,8 @@ export const BUMP_DISTANCE = 2;
 
 export const POKEMON_SPRITE_SHEET = 'gen-1-overworld-pokemon';
 export const DEFAULT_POKEMON_SPRITE_SIZE = 32;
+export const DEFAULT_NPC_SCALE = 1.5;
+export const DEFAULT_POKEMON_SCALE = 1.75;
 
 export const SPRITE_SHEET_DEFAULTS: Record<string, { padding: number; spacing: number; inset: number; defaultWidth: number; defaultHeight: number }> = {
   [POKEMON_SPRITE_SHEET]: { 

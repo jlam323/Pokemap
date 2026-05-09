@@ -1,16 +1,6 @@
-import { Entity, NPCBase, NPCPlacement, Position, Direction, EntityType, MovementType, NPCType, ActionTrigger } from '../types';
-import { TILE_SIZE, POKEMON_SPRITE_SHEET } from '../constants';
+import { Entity, NPCBase, NPCPlacement, Position, Direction, EntityType, MovementType, NPCType, ActionTrigger, NPCSpriteConfig } from '../types';
+import { TILE_SIZE, POKEMON_SPRITE_SHEET, DEFAULT_NPC_SCALE, DEFAULT_POKEMON_SCALE } from '../constants';
 import { POKEMON_NPC_BASES, POKEMON_NPC_PLACEMENTS } from './pokemon';
-
-export const DEFAULT_NPC_SCALE = 1.5;
-export const DEFAULT_POKEMON_SCALE = 1.75;
-
-export interface NPCSpriteConfig {
-  name: string;
-  basePath: string;
-  frames: string[];
-  scale?: number;
-}
 
 export const NPC_SPRITE_CONFIGS: Record<string, NPCSpriteConfig> = {
   'oak': {
