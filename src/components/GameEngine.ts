@@ -123,6 +123,7 @@ export function GameEngine() {
     keysPressed,
     update,
     handleInteraction,
+    handleThrow: spawnPokeball,
     handleArrowDown,
     handleArrowUp,
     changeMap,

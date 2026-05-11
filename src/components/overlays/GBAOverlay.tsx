@@ -8,11 +8,12 @@ interface GBAOverlayProps {
   children: React.ReactNode;
   gameState: GameState;
   handleInteraction: () => void;
+  handleThrow: () => void;
   keysPressed: React.RefObject<Set<string>>;
 }
 
 // GAMEBOY ADVANCE OVERLAY
-export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed }: GBAOverlayProps) => {
+export const GBAOverlay = ({ children, gameState, handleInteraction, handleThrow, keysPressed }: GBAOverlayProps) => {
   const containerVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.95 },
     show: {
@@ -205,16 +206,16 @@ export const GBAOverlay = ({ children, gameState, handleInteraction, keysPressed
             <button 
               onPointerDown={(e) => {
                 e.currentTarget.setPointerCapture(e.pointerId);
-                keysPressed.current?.add(' ');
-                handleInteraction();
+                keysPressed.current?.add('f');
+                handleThrow();
               }} 
               onPointerUp={(e) => {
                 e.currentTarget.releasePointerCapture(e.pointerId);
-                keysPressed.current?.delete(' ');
+                keysPressed.current?.delete('f');
               }}
               onPointerCancel={(e) => {
                 e.currentTarget.releasePointerCapture(e.pointerId);
-                keysPressed.current?.delete(' ');
+                keysPressed.current?.delete('f');
               }}
               className="w-[6.5cqw] h-[6.5cqw] rounded-full bg-[#3d3d3d] shadow-[0.5cqw_0.5cqw_0px_rgba(0,0,0,0.4),inset_-0.25cqw_-0.25cqw_0.66cqw_rgba(0,0,0,0.5)] active:translate-y-[0.33cqw] active:shadow-none transition-all flex items-center justify-center text-white/50 font-black text-[2.9cqw] border-[0.16cqw] border-white/5 outline-none"
             >

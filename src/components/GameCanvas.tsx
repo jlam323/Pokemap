@@ -36,6 +36,7 @@ export default function GameCanvas() {
     keysPressed,
     update,
     handleInteraction,
+    handleThrow,
     handleArrowDown,
     handleArrowUp,
     changeMap,
@@ -312,11 +313,18 @@ export default function GameCanvas() {
       ctx.save();
       const now = Date.now();
       const elapsed = now - msg.startTime;
-      const progress = elapsed / msg.duration;
-      const alpha = 1 - progress;
       
-      // Float upwards
-      const floatOffset = progress * 30;
+      const delay = 1000; // 1 second delay
+      let alpha = 1;
+      let floatOffset = 0;
+
+      if (elapsed > delay) {
+        const animDuration = Math.max(msg.duration - delay, 1);
+        const animElapsed = Math.min(elapsed - delay, animDuration);
+        const progress = animElapsed / animDuration;
+        alpha = 1 - progress;
+        floatOffset = progress * 30;
+      }
       
       ctx.globalAlpha = Math.max(0, alpha);
       ctx.fillStyle = 'white';
@@ -514,6 +522,7 @@ export default function GameCanvas() {
             <NoOverlay 
               gameState={gameState}
               handleInteraction={handleInteraction}
+              handleThrow={handleThrow}
               handleArrowDown={handleArrowDown}
               handleArrowUp={handleArrowUp}
             />
@@ -541,6 +550,7 @@ export default function GameCanvas() {
                   <GBCOverlay 
                      gameState={gameState} 
                      handleInteraction={handleInteraction} 
+                     handleThrow={handleThrow}
                      keysPressed={keysPressed}
                   >
                     <div ref={containerRef} className="w-full h-full">
@@ -561,6 +571,7 @@ export default function GameCanvas() {
                   <GBAOverlay 
                      gameState={gameState} 
                      handleInteraction={handleInteraction} 
+                     handleThrow={handleThrow}
                      keysPressed={keysPressed}
                   >
                     <div ref={containerRef} className="w-full h-full">

@@ -123,7 +123,7 @@ export function usePokeballs({
                   id: Math.random().toString(36).substr(2, 9),
                   text: phrase,
                   pos: { ...ball.pos },
-                  duration: 2000,
+                  duration: 3000,
                   startTime: Date.now()
                 }
               ]

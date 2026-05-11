@@ -39,7 +39,7 @@ export const DialogueBox = ({
       </p>
 
       <motion.div className="absolute bottom-[-1.2vh] right-0 text-[1vh] font-black text-black/50 animate-pulse tracking-widest">
-          TAP SPACE OR A/B TO CONTINUE
+          TAP SPACE OR (A) TO CONTINUE
       </motion.div>
     </div>
   </motion.div>

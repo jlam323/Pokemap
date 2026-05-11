@@ -8,11 +8,12 @@ interface GBCOverlayProps {
   children: React.ReactNode;
   gameState: GameState;
   handleInteraction: () => void;
+  handleThrow: () => void;
   keysPressed: React.RefObject<Set<string>>;
 }
 
 // GAMEBOY COLOR OVERLAY
-export const GBCOverlay = ({ children, gameState, handleInteraction, keysPressed }: GBCOverlayProps) => {
+export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow, keysPressed }: GBCOverlayProps) => {
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -107,16 +108,16 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, keysPressed
               <button 
                 onPointerDown={(e) => { 
                   e.currentTarget.setPointerCapture(e.pointerId); 
-                  keysPressed.current?.add(' ');
-                  handleInteraction(); 
+                  keysPressed.current?.add('f');
+                  handleThrow(); 
                 }} 
                 onPointerUp={(e) => {
                   e.currentTarget.releasePointerCapture(e.pointerId);
-                  keysPressed.current?.delete(' ');
+                  keysPressed.current?.delete('f');
                 }}
                 onPointerCancel={(e) => {
                   e.currentTarget.releasePointerCapture(e.pointerId);
-                  keysPressed.current?.delete(' ');
+                  keysPressed.current?.delete('f');
                 }}
                 className="w-[6vh] h-[6vh] rounded-full bg-[#8b1d44] shadow-[0.4vh_0.4vh_0px_rgba(0,0,0,0.2),inset_-0.2vh_-0.2vh_0.4vh_rgba(0,0,0,0.3)] active:translate-y-[0.2vh] active:shadow-none transition-all flex items-center justify-center text-white/20 font-bold text-[2vh] border-[0.2vh] border-white/5 outline-none"
               >

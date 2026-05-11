@@ -42,7 +42,7 @@ export const ALL_MAPS: MapConfig[] = [
     mapImage: "map/pokemon-center-map.png",
     zoomMultiplier: 1.5,
     spriteScaleMultiplier: 0.85,
-    startPos: { x: 6, y: 8 },
+    startPos: { x: 7, y: 8 },
     overlays: {
       none: { width: 14, height: 9 },
       gbc: { width: 14, height: 9 },

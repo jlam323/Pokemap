@@ -7,6 +7,7 @@ import { GameState, Direction } from '../../types';
 interface NoOverlayProps {
   gameState: GameState;
   handleInteraction: () => void;
+  handleThrow: () => void;
   handleArrowDown: (dir: Direction) => void;
   handleArrowUp: (dir: Direction) => void;
 }
@@ -14,6 +15,7 @@ interface NoOverlayProps {
 export function NoOverlay({ 
   gameState, 
   handleInteraction, 
+  handleThrow,
   handleArrowDown, 
   handleArrowUp 
 }: NoOverlayProps) {
@@ -76,14 +78,21 @@ export function NoOverlay({
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="absolute bottom-25 right-8 pointer-events-auto">
-          <button 
+        {/* Action Buttons */}
+        <div className="absolute bottom-30 right-8 pointer-events-auto flex flex-col gap-4">
+          <button
             onClick={handleInteraction}
-            className="w-20 h-20 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
+            className="w-16 h-16 translate-x-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
             aria-label="Action"
           >
             <div className="text-white font-black text-2xl tracking-tighter">A</div>
+          </button>
+          <button 
+            onClick={handleThrow}
+            className="w-16 h-16 -translate-x-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
+            aria-label="Throw"
+          >
+            <div className="text-white font-black text-2xl tracking-tighter">B</div>
           </button>
         </div>
       </div>
@@ -99,9 +108,18 @@ export function NoOverlay({
           </div>
         </div>
         <div className="h-8 w-px bg-white/10" />
-        <div className="flex items-center gap-3">
-          <kbd className="px-4 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest">SPACE</kbd>
-          <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Interact</span>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <kbd className="px-4 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest min-w-[100px] flex items-center justify-center">SPACE</kbd>
+            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Interact</span>
+          </div>
+        </div>
+        <div className="h-8 w-px bg-white/10" />
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <kbd className="px-3 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest min-w-[50px] flex items-center justify-center">F</kbd>
+            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Throw</span>
+          </div>
         </div>
       </div>
     </div>
