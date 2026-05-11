@@ -118,7 +118,7 @@ export function NoOverlay({
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
             <kbd className="px-3 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest min-w-[50px] flex items-center justify-center">F</kbd>
-            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Throw</span>
+            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Throw Ball</span>
           </div>
         </div>
       </div>

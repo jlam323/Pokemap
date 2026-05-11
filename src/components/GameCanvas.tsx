@@ -244,14 +244,16 @@ export default function GameCanvas() {
             const dw = sw * scale;
             const dh = sh * scale;
             
-            const sx = frameIndex * sw;
-            const sy = 0;
+            const sx = frameIndex * sw + 1;
+            const sy = 1;
+            const sWidth = Math.max(0, sw - 2);
+            const sHeight = Math.max(0, sh - 2);
 
             ctx.imageSmoothingEnabled = false;
             const xOffset = (dw - TILE_SIZE) / 2;
             const yOffset = dh - TILE_SIZE;
             
-            ctx.drawImage(sheetImg, sx, sy, sw, sh, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
+            ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
           }
         });
       }

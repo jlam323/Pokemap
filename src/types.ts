@@ -160,6 +160,7 @@ export interface Entity {
   startPos?: Position;
   targetPos?: Position;
   moveProgress?: number;
+  moveJitter?: number;
   bumpOffset?: Position;
   mapId?: number; // Add mapId to associate NPCs with a map
   npcType?: NPCType;

@@ -6,7 +6,7 @@ export const ALL_MAPS: MapConfig[] = [
     name: "Kanto Region",
     gridDataFile: "kanto.json",
     mapImage: "map/kanto-map.png",
-    spriteScaleMultiplier: 1.0,
+    spriteScaleMultiplier: 0.9,
     startPos: { x: 24, y: 31 },
     overlays: {
       none: { width: 100, height: 60 },

@@ -82,10 +82,22 @@ export function useEntityUpdates({
 					npc.walkFrame = (Math.floor(progress * 4) % 2) + 1;
 				}
 			} else if (npc.movementType === MovementType.RANDOM) {
-				const moveInterval = npc.type === EntityType.POKEMON ? 3000 : 8000;
-				npc.movementTimer = (npc.movementTimer || 0) + dt;
-				if (npc.movementTimer >= moveInterval) {
+				const baseInterval = npc.type === EntityType.POKEMON ? 3000 : 8000;
+				
+				// Initialize with a random offset so they don't all move at once on start
+				if (npc.movementTimer === undefined) {
+					npc.movementTimer = Math.random() * baseInterval;
+				}
+
+				npc.movementTimer += dt;
+				
+				// Add some jitter to the interval so they don't stay in sync long-term
+				const jitter = 1000; 
+				const currentInterval = baseInterval + (npc.moveJitter || 0);
+
+				if (npc.movementTimer >= currentInterval) {
 					npc.movementTimer = 0;
+					npc.moveJitter = (Math.random() - 0.5) * jitter; // Next interval will be slightly different
 					
 					const directions: Direction[] = ['up', 'down', 'left', 'right'];
 					const dir = directions[Math.floor(Math.random() * directions.length)];
