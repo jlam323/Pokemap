@@ -182,27 +182,36 @@ export default function GameCanvas() {
 
     const spriteScale = mapConfig.spriteScaleMultiplier || 1;
 
+    // Collect all renderable entities for Y-sorting
+    type RenderTask = { y: number; draw: () => void };
+    const renderTasks: RenderTask[] = [];
+
+    // 1. Add NPCs
     npcsRef.current.forEach(npc => {
       const isBeingCaptured = pokeballsRef.current.some(b => b.isCapturing && b.hitEntityId === npc.id);
       if (isBeingCaptured) return;
 
-      drawPixelSprite(
-        ctx, 
-        npc.pos.x, 
-        npc.pos.y, 
-        npc.dir, 
-        npc.walkFrame || 0, 
-        npc.isSurfing || false, 
-        npcImages,
-        npc.spriteName,
-        npc.bumpOffset,
-        spriteScale,
-        npc.scale,
-        npc.isActionActive,
-        npc.spriteSheet
-      );
+      renderTasks.push({
+        y: npc.pos.y,
+        draw: () => drawPixelSprite(
+          ctx, 
+          npc.pos.x, 
+          npc.pos.y, 
+          npc.dir, 
+          npc.walkFrame || 0, 
+          npc.isSurfing || false, 
+          npcImages,
+          npc.spriteName,
+          npc.bumpOffset,
+          spriteScale,
+          npc.scale,
+          npc.isActionActive,
+          npc.spriteSheet
+        )
+      });
     });
 
+    // 2. Add Items
     itemsRef.current.forEach(item => {
       if (item.isCollected) return;
       
@@ -216,97 +225,122 @@ export default function GameCanvas() {
         const sheetImg = images[sheetImgName];
         if (!sheetImg) return;
 
-        let frameIndexStr: string;
-        if (item.isActionActive && item.actionFrame && config.actionSequence) {
-          const seqIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
-          frameIndexStr = config.actionSequence[seqIndex];
-        } else {
-          frameIndexStr = config.idleFrame || '0';
-        }
-        
-        const frameIndex = parseInt(frameIndexStr);
-        const sw = sheetImg.width / (config.sheetWidth || 1);
-        const sh = sheetImg.height;
-        const scale = (item.scale || 1.0) * spriteScale;
-        
-        // Items on ground should use the full sprite height (usually 32x32 which might include ground shadow)
-        const dw = sw * scale;
-        const dh = sh * scale;
-        
-        const sx = frameIndex * sw;
-        const sy = 0;
+        renderTasks.push({
+          y: item.pos.y,
+          draw: () => {
+            let frameIndexStr: string;
+            if (item.isActionActive && item.actionFrame && config.actionSequence) {
+              const seqIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
+              frameIndexStr = config.actionSequence[seqIndex];
+            } else {
+              frameIndexStr = config.idleFrame || '0';
+            }
+            
+            const frameIndex = parseInt(frameIndexStr);
+            const sw = sheetImg.width / (config.sheetWidth || 1);
+            const sh = sheetImg.height;
+            const scale = (item.scale || 1.0) * spriteScale;
+            
+            const dw = sw * scale;
+            const dh = sh * scale;
+            
+            const sx = frameIndex * sw;
+            const sy = 0;
 
-        ctx.imageSmoothingEnabled = false;
-        // Center horizontally and align bottom
-        const xOffset = (dw - TILE_SIZE) / 2;
-        const yOffset = dh - TILE_SIZE;
-        
-        ctx.drawImage(sheetImg, sx, sy, sw, sh, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
+            ctx.imageSmoothingEnabled = false;
+            const xOffset = (dw - TILE_SIZE) / 2;
+            const yOffset = dh - TILE_SIZE;
+            
+            ctx.drawImage(sheetImg, sx, sy, sw, sh, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
+          }
+        });
       }
     });
 
-    drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.scale, player.isActionActive);
-    
+    // 3. Add Player
+    renderTasks.push({
+      y: player.pos.y,
+      draw: () => drawPixelSprite(
+        ctx, 
+        player.pos.x, 
+        player.pos.y, 
+        player.dir, 
+        player.walkFrame, 
+        player.isSurfing, 
+        playerImages, 
+        undefined, 
+        player.bumpOffset, 
+        spriteScale, 
+        player.scale, 
+        player.isActionActive
+      )
+    });
+
+    // 4. Add Pokeballs
     pokeballsRef.current.forEach(ball => {
-      const isCapturing = ball.isCapturing;
-      const ballType = ball.ballType || 'pokeball';
-      const images = itemImages[ballType];
-      const config = THROW_BALL_SPRITE_CONFIGS[ballType] || ITEM_SPRITE_CONFIGS[ballType];
-      
-      const sheetImgName = `${ballType}-sheet`;
-      const sheetImg = images?.[sheetImgName];
-      
-      if (!images || !config?.isSheet || !sheetImg) {
-        // Fallback for standard static sprites if sheet isn't ready or configured
-        const ballImg = (images ? (images[ballType] || Object.values(images)[0]) : null) as HTMLImageElement;
-        if (!ballImg) return;
-        const baseBallSize = 24;
-        ctx.save();
-        ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
-        ctx.rotate(ball.progress * Math.PI * 4);
-        ctx.drawImage(ballImg, -baseBallSize / 2, -baseBallSize / 2, baseBallSize, baseBallSize);
-        ctx.restore();
-        return;
-      }
+      renderTasks.push({
+        y: ball.pos.y,
+        draw: () => {
+          const isCapturing = ball.isCapturing;
+          const ballType = ball.ballType || 'pokeball';
+          const images = itemImages[ballType];
+          const config = THROW_BALL_SPRITE_CONFIGS[ballType] || ITEM_SPRITE_CONFIGS[ballType];
+          
+          const sheetImgName = `${ballType}-sheet`;
+          const sheetImg = images?.[sheetImgName];
+          
+          if (!images || !config?.isSheet || !sheetImg) {
+            const ballImg = (images ? (images[ballType] || Object.values(images)[0]) : null) as HTMLImageElement;
+            if (!ballImg) return;
+            const baseBallSize = 24;
+            ctx.save();
+            ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
+            ctx.rotate(ball.progress * Math.PI * 4);
+            ctx.drawImage(ballImg, -baseBallSize / 2, -baseBallSize / 2, baseBallSize, baseBallSize);
+            ctx.restore();
+            return;
+          }
 
-      const baseBallSize = 24;
-      
-      let frameIndex = 0;
-      if (isCapturing) {
-        const sequence = ball.captureType === 'success' ? CATCH_SUCCESS_SEQUENCE : CATCH_FAILURE_SEQUENCE;
-        frameIndex = sequence[Math.floor(ball.captureFrame || 0)] || 0;
-      } else {
-        // Use the 3rd sprite (index 2) for the thrown ball
-        frameIndex = 2;
-      }
-        
-      const sw = sheetImg.width / (config.sheetWidth || 1);
-      const sh = sheetImg.height;
-      const aspect = sh / sw;
+          const baseBallSize = 24;
+          let frameIndex = 0;
+          if (isCapturing) {
+            const sequence = ball.captureType === 'success' ? CATCH_SUCCESS_SEQUENCE : CATCH_FAILURE_SEQUENCE;
+            frameIndex = sequence[Math.floor(ball.captureFrame || 0)] || 0;
+          } else {
+            frameIndex = 2;
+          }
+            
+          const sw = sheetImg.width / (config.sheetWidth || 1);
+          const sh = sheetImg.height;
+          const aspect = sh / sw;
 
-      // 1px inset to prevent bleeding from adjacent frames
-      let sx = frameIndex * sw + 1;
-      let sy = 1;
-      let sWidth = Math.max(0, sw - 2);
-      let sHeight = Math.max(0, sh - 2);
+          let sx = frameIndex * sw + 1;
+          let sy = 1;
+          let sWidth = Math.max(0, sw - 2);
+          let sHeight = Math.max(0, sh - 2);
 
-      if (!isCapturing) {
-        // Only use the bottom 16px for the thrown ball to keep it centered during rotation
-        sy = Math.max(0, sh - 16);
-        sHeight = 16;
-      }
+          if (!isCapturing) {
+            sy = Math.max(0, sh - 16);
+            sHeight = 16;
+          }
 
-      const dw = baseBallSize;
-      const dh = isCapturing ? baseBallSize * aspect : baseBallSize;
-      
-      ctx.save();
-      ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
-      if (!isCapturing) {
-        ctx.rotate(ball.progress * Math.PI * 4);
-      }
-      ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, -dw / 2, -dh / 2, dw, dh);
-      ctx.restore();
+          const dw = baseBallSize;
+          const dh = isCapturing ? baseBallSize * aspect : baseBallSize;
+          
+          ctx.save();
+          ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
+          if (!isCapturing) {
+            ctx.rotate(ball.progress * Math.PI * 4);
+          }
+          ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, -dw / 2, -dh / 2, dw, dh);
+          ctx.restore();
+        }
+      });
     });
+
+    // Execute Y-Sorted Rendering
+    renderTasks.sort((a, b) => a.y - b.y);
+    renderTasks.forEach(task => task.draw());
 
     // Draw Floating Messages
     gameState.floatingMessages.forEach(msg => {
