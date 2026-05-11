@@ -3,6 +3,7 @@ import { Direction } from '../types';
 
 interface InputSystemProps {
   handleInteraction: () => void;
+  handleThrow: () => void;
 }
 
 /**
@@ -14,14 +15,20 @@ interface InputSystemProps {
  * @param props - Interaction handler to trigger when action keys are pressed.
  * @returns {Object} keysPressed ref and directional arrow handlers.
  */
-export function useInputSystem({ handleInteraction }: InputSystemProps) {
+export function useInputSystem({ handleInteraction, handleThrow }: InputSystemProps) {
   const keysPressed = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      keysPressed.current.add(e.key.toLowerCase());
-      if (e.key === ' ' || e.key === 'Enter') {
+      const key = e.key.toLowerCase();
+      keysPressed.current.add(key);
+      if (key === ' ' || key === 'enter') {
+        e.preventDefault();
         handleInteraction();
+      }
+      if (key === 'f') {
+        e.preventDefault();
+        handleThrow();
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -40,7 +47,7 @@ export function useInputSystem({ handleInteraction }: InputSystemProps) {
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [handleInteraction]);
+  }, [handleInteraction, handleThrow]);
 
   const handleArrowDown = useCallback((dir: Direction) => {
     const keyMap: Record<Direction, string> = {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PLAYER_SPRITE_CONFIG } from '../data/player';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
-import { ITEM_SPRITE_CONFIGS } from '../data/items';
+import { ITEM_SPRITE_CONFIGS, THROW_BALL_SPRITE_CONFIGS } from '../data/items';
 import { ALL_MAPS } from '../data/maps';
 import { POKEMON_SPRITE_SHEET } from '../constants';
 
@@ -87,8 +87,24 @@ export function useAssets() {
 
     // Item Sprites
     Object.entries(ITEM_SPRITE_CONFIGS).forEach(([spriteName, config]) => {
-      itemImagesRef.current[spriteName] = {};
+      itemImagesRef.current[spriteName] = itemImagesRef.current[spriteName] || {};
       config.frames.forEach(frame => {
+        imagesToLoad++;
+        const iImg = new Image();
+        iImg.src = `${base}${config.basePath}/${frame}.png`;
+        iImg.onload = () => {
+          itemImagesRef.current[spriteName][frame] = iImg;
+          checkAllLoaded();
+        };
+        iImg.onerror = checkAllLoaded;
+      });
+    });
+
+    // Thrown Ball Sprites
+    Object.entries(THROW_BALL_SPRITE_CONFIGS).forEach(([spriteName, config]) => {
+      itemImagesRef.current[spriteName] = itemImagesRef.current[spriteName] || {};
+      config.frames.forEach(frame => {
+        if (itemImagesRef.current[spriteName][frame]) return; // Already loading/loaded
         imagesToLoad++;
         const iImg = new Image();
         iImg.src = `${base}${config.basePath}/${frame}.png`;

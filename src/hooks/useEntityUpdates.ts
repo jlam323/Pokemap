@@ -63,6 +63,8 @@ export function useEntityUpdates({
 		if (isTalking || isTransitioning) return;
 
 		npcsRef.current.forEach(npc => {
+			if (npc.isActionActive) return;
+			
 			if (npc.isMoving) {
 				npc.moveProgress = (npc.moveProgress || 0) + dt / MOVE_DURATION;
 				const progress = Math.min(npc.moveProgress, 1);
@@ -234,7 +236,7 @@ export function useEntityUpdates({
       let newDir = player.dir;
       let moving = false;
 
-      let moveDir: Direction | null = null;
+      let moveDir: Direction = null;
       if (autoStepDirRef.current) {
         moveDir = autoStepDirRef.current;
         autoStepDirRef.current = null;

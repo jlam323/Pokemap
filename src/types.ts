@@ -42,6 +42,16 @@ export interface Position {
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
+export interface BallSpriteConfig {
+  basePath: string;
+  frames: string[];
+  idleFrame: string;
+  actionSequence: string[];
+  isSheet?: boolean;
+  sheetWidth?: number;
+  sheetHeight?: number;
+}
+
 export interface MapOverlayConfig {
   width: number;
   height: number;
@@ -50,6 +60,29 @@ export interface MapOverlayConfig {
 export interface TeleportConfig {
   tileValue: number;
   targetPos: Position;
+}
+
+export interface Pokeball {
+  id: string;
+  pos: Position;
+  targetPos: Position;
+  startPos: Position;
+  dir: Direction;
+  progress: number;
+  isCollided: boolean;
+  hitEntityId?: string;
+  isCapturing?: boolean;
+  captureFrame?: number;
+  captureType?: 'success' | 'failure';
+  ballType?: string;
+}
+
+export interface FloatingMessage {
+  id: string;
+  text: string;
+  pos: Position;
+  duration: number;
+  startTime: number;
 }
 
 export interface MapConfig {
@@ -173,6 +206,8 @@ export interface GameState {
   collectedItemIds: string[];
   isTransitioning: boolean;
   transitionType: 'fade' | 'flash' | 'circle';
+  pokeballs: Pokeball[];
+  floatingMessages: FloatingMessage[];
   hasInteractedWithNPC: boolean;
   hasInteractedWithItem: boolean;
 }

@@ -5,6 +5,7 @@ import { useCollisionSystem } from '../hooks/useCollisionSystem';
 import { useMapSystem } from '../hooks/useMapSystem';
 import { useEntityUpdates } from '../hooks/useEntityUpdates';
 import { useInteractions } from '../hooks/useInteractions';
+import { usePokeballs } from '../hooks/usePokeballs';
 import { useInputSystem } from '../hooks/useInputSystem';
 
 export function GameEngine() {
@@ -41,12 +42,21 @@ export function GameEngine() {
     initCollisionMap
   });
 
+  const { spawnPokeball, updatePokeballs, pokeballsRef } = usePokeballs({
+    setGameState,
+    playerRef,
+    npcsRef,
+    itemsRef,
+    initCollisionMap
+  });
+
   const {
     keysPressed,
     handleArrowDown,
     handleArrowUp
   } = useInputSystem({
-    handleInteraction
+    handleInteraction,
+    handleThrow: spawnPokeball
   });
 
   const {
@@ -86,7 +96,21 @@ export function GameEngine() {
     const currentState = stateRef.current;
     updateNPCs(dt, currentState.isTalking, currentState.isTransitioning);
     updatePlayer(dt, currentState.isTalking, currentState);
-  }, [updateNPCs, updatePlayer, stateRef]);
+    updatePokeballs(dt);
+
+    if (currentState.floatingMessages.length > 0) {
+      const now = Date.now();
+      const activeMessages = currentState.floatingMessages.filter(
+        msg => now - msg.startTime < msg.duration
+      );
+      if (activeMessages.length !== currentState.floatingMessages.length) {
+        setGameState(prev => ({
+          ...prev,
+          floatingMessages: activeMessages
+        }));
+      }
+    }
+  }, [updateNPCs, updatePlayer, updatePokeballs, stateRef, setGameState]);
 
   return {
     gameState,
@@ -95,6 +119,7 @@ export function GameEngine() {
     npcsRef,
     itemsRef,
     stateRef,
+    pokeballsRef,
     keysPressed,
     update,
     handleInteraction,

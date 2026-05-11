@@ -1,5 +1,5 @@
 import { useCallback, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
-import { Position, Entity, Item, GameState, MapConfig, TileType, Direction } from '../types';
+import { Position, Entity, Item, GameState, TileType, Direction } from '../types';
 import { TILE_SIZE, MOVE_DURATION } from '../constants';
 import { ALL_MAPS } from '../data/maps';
 import { TILE_GRIDS } from '../lib/gameLogic';

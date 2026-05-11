@@ -1,11 +1,7 @@
-import { useState, useRef, useEffect, MutableRefObject } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GameState, Entity, Item, Position } from '../types';
-import { TILE_SIZE } from '../constants';
-import { INITIAL_NPCS } from '../data/npcs';
 import { INITIAL_PLAYER } from '../data/player';
-import { INITIAL_ITEMS } from '../data/items';
 import { ALL_MAPS } from '../data/maps';
-import { spawnDynamicPokemon } from '../lib/gameLogic';
 
 import { prepareMapData } from '../lib/mapLogic';
 
@@ -34,6 +30,8 @@ export function getInitialGameState(): GameState {
     collectedItemIds: [],
     isTransitioning: false,
     transitionType: 'fade',
+    pokeballs: [],
+    floatingMessages: [],
     hasInteractedWithNPC: false,
     hasInteractedWithItem: false
   };

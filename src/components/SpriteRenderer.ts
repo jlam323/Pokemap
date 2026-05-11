@@ -1,7 +1,7 @@
 import { Direction } from '../types';
 import { NPC_SPRITE_CONFIGS } from '../data/npcs';
 import { PLAYER_SCALE, SURF_SCALE_MODIFIER } from '../data/player';
-import { TILE_SIZE, SPRITE_SHEET_DEFAULTS, DEFAULT_NPC_SCALE } from '../constants';
+import { SPRITE_SHEET_DEFAULTS, DEFAULT_NPC_SCALE } from '../constants';
 
 export const drawPixelSprite = (
   ctx: CanvasRenderingContext2D, 
@@ -166,25 +166,4 @@ const drawSheetSprite = (
     srcX, srcY, srcW, srcH,
     x - xOffset, y - yOffsetInner, displayWidth, size
   );
-};
-
-export const drawItemSprite = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  image?: HTMLImageElement,
-  scale: number = 1
-) => {
-  if (!image) return;
-
-  const width = image.width * scale;
-  const height = image.height * scale;
-
-  // Center horizontally within 32px tile
-  const xOffset = (width - TILE_SIZE) / 2;
-  // Align bottom of sprite with bottom of 32px tile
-  const yOffset = height - TILE_SIZE;
-
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(image, Math.round(x - xOffset), Math.round(y - yOffset), width, height);
 };

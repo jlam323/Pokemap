@@ -5,11 +5,11 @@ import { GameEngine } from './GameEngine';
 import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
 import { GBAOverlay } from './overlays/GBAOverlay';
-import { TILE_SIZE, POKEMON_SPRITE_SHEET, SPRITE_SHEET_DEFAULTS } from '../constants';
 import { useAssets } from '../hooks/useAssets';
-import { ITEM_SPRITE_CONFIGS } from '../data/items';
-import { ALL_MAPS, TOGGLEABLE_MAPS } from '../data/maps';
-import { drawPixelSprite, drawItemSprite } from './SpriteRenderer';
+import { ITEM_SPRITE_CONFIGS, THROW_BALL_SPRITE_CONFIGS } from '../data/items';
+import { TOGGLEABLE_MAPS } from '../data/maps';
+import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, TILE_SIZE } from '../constants';
+import { drawPixelSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import { EntityType } from '../types';
 
@@ -32,6 +32,7 @@ export default function GameCanvas() {
     npcsRef,
     itemsRef,
     stateRef,
+    pokeballsRef,
     keysPressed,
     update,
     handleInteraction,
@@ -40,6 +41,13 @@ export default function GameCanvas() {
     changeMap,
     currentMap
   } = GameEngine();
+
+  const updateRef = useRef(update);
+  const drawRef = useRef<(ctx: CanvasRenderingContext2D) => void>(() => {});
+
+  useEffect(() => {
+    updateRef.current = update;
+  }, [update]);
 
   const currentMapRef = useRef(currentMap);
   useEffect(() => {
@@ -51,8 +59,8 @@ export default function GameCanvas() {
   }, [displayedOverlayMode]);
 
   useEffect(() => {
-    let observedElement: HTMLElement | null = null;
-    let observer: ResizeObserver | null = null;
+    let observedElement: HTMLElement = null;
+    let observer: ResizeObserver = null;
     let frameId: number;
 
     const measure = () => {
@@ -130,8 +138,6 @@ export default function GameCanvas() {
       targetScale *= width / (maxVisibleTiles * TILE_SIZE);
     }
 
-    // Quantize scale to nearest 0.25 to avoid messy sub-pixel boundaries
-    // We also round the dimensions to ensure logicalWidth/Height calculation is stable
     const canvasWidth = Math.round(width);
     const canvasHeight = Math.round(height);
     const scale = isNone ? targetScale : Math.round(targetScale * 4) / 4;
@@ -145,7 +151,6 @@ export default function GameCanvas() {
     ctx.scale(dpr, dpr);
 
     const player = playerRef.current;
-    // We calculate the raw camera position
     let targetCameraX = player.pos.x + TILE_SIZE / 2 - logicalWidth / 2;
     let targetCameraY = player.pos.y + TILE_SIZE / 2 - logicalHeight / 2;
 
@@ -160,7 +165,6 @@ export default function GameCanvas() {
 
     ctx.save();
     
-    // Snap camera/translation to physical pixels
     const physicalX = Math.round((offsetX - targetCameraX) * scale);
     const physicalY = Math.round((offsetY - targetCameraY) * scale);
     
@@ -178,6 +182,9 @@ export default function GameCanvas() {
     const spriteScale = mapConfig.spriteScaleMultiplier || 1;
 
     npcsRef.current.forEach(npc => {
+      const isBeingCaptured = pokeballsRef.current.some(b => b.isCapturing && b.hitEntityId === npc.id);
+      if (isBeingCaptured) return;
+
       drawPixelSprite(
         ctx, 
         npc.pos.x, 
@@ -185,7 +192,7 @@ export default function GameCanvas() {
         npc.dir, 
         npc.walkFrame || 0, 
         npc.isSurfing || false, 
-        npcImages, // Pass full npcImages to allow access to _sheets and npc specific records
+        npcImages,
         npc.spriteName,
         npc.bumpOffset,
         spriteScale,
@@ -195,7 +202,6 @@ export default function GameCanvas() {
       );
     });
 
-    // Draw Items
     itemsRef.current.forEach(item => {
       if (item.isCollected) return;
       
@@ -203,29 +209,130 @@ export default function GameCanvas() {
       if (!images) return;
 
       const config = ITEM_SPRITE_CONFIGS[item.spriteName];
-      let frame: HTMLImageElement | undefined;
       
-      if (item.isActionActive && item.actionFrame && config?.actionSequence) {
-        // Clamp the frame to the sequence length to be absolutely sure
-        const frameIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
-        const frameName = config.actionSequence[frameIndex];
-        frame = images[frameName] || images[item.spriteName];
-      } else {
-        const idleFrameName = config?.idleFrame || item.spriteName;
-        frame = images[idleFrameName] || (Object.values(images)[0] as HTMLImageElement);
+      if (config?.isSheet) {
+        const sheetImgName = config.frames[0];
+        const sheetImg = images[sheetImgName];
+        if (!sheetImg) return;
+
+        let frameIndexStr: string;
+        if (item.isActionActive && item.actionFrame && config.actionSequence) {
+          const seqIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
+          frameIndexStr = config.actionSequence[seqIndex];
+        } else {
+          frameIndexStr = config.idleFrame || '0';
+        }
+        
+        const frameIndex = parseInt(frameIndexStr);
+        const sw = sheetImg.width / (config.sheetWidth || 1);
+        const sh = sheetImg.height;
+        const scale = (item.scale || 1.0) * spriteScale;
+        
+        // Items on ground should use the full sprite height (usually 32x32 which might include ground shadow)
+        const dw = sw * scale;
+        const dh = sh * scale;
+        
+        const sx = frameIndex * sw;
+        const sy = 0;
+
+        ctx.imageSmoothingEnabled = false;
+        // Center horizontally and align bottom
+        const xOffset = (dw - TILE_SIZE) / 2;
+        const yOffset = dh - TILE_SIZE;
+        
+        ctx.drawImage(sheetImg, sx, sy, sw, sh, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
       }
-      
-      drawItemSprite(
-        ctx,
-        item.pos.x,
-        item.pos.y,
-        frame,
-        (item.scale || 1.0) * spriteScale
-      );
     });
 
     drawPixelSprite(ctx, player.pos.x, player.pos.y, player.dir, player.walkFrame, player.isSurfing, playerImages, undefined, player.bumpOffset, spriteScale, player.scale, player.isActionActive);
     
+    pokeballsRef.current.forEach(ball => {
+      const isCapturing = ball.isCapturing;
+      const ballType = ball.ballType || 'pokeball';
+      const images = itemImages[ballType];
+      const config = THROW_BALL_SPRITE_CONFIGS[ballType] || ITEM_SPRITE_CONFIGS[ballType];
+      
+      const sheetImgName = `${ballType}-sheet`;
+      const sheetImg = images?.[sheetImgName];
+      
+      if (!images || !config?.isSheet || !sheetImg) {
+        // Fallback for standard static sprites if sheet isn't ready or configured
+        const ballImg = (images ? (images[ballType] || Object.values(images)[0]) : null) as HTMLImageElement;
+        if (!ballImg) return;
+        const baseBallSize = 24;
+        ctx.save();
+        ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
+        ctx.rotate(ball.progress * Math.PI * 4);
+        ctx.drawImage(ballImg, -baseBallSize / 2, -baseBallSize / 2, baseBallSize, baseBallSize);
+        ctx.restore();
+        return;
+      }
+
+      const baseBallSize = 24;
+      
+      let frameIndex = 0;
+      if (isCapturing) {
+        const sequence = ball.captureType === 'success' ? CATCH_SUCCESS_SEQUENCE : CATCH_FAILURE_SEQUENCE;
+        frameIndex = sequence[Math.floor(ball.captureFrame || 0)] || 0;
+      } else {
+        // Use the 3rd sprite (index 2) for the thrown ball
+        frameIndex = 2;
+      }
+        
+      const sw = sheetImg.width / (config.sheetWidth || 1);
+      const sh = sheetImg.height;
+      const aspect = sh / sw;
+
+      // 1px inset to prevent bleeding from adjacent frames
+      let sx = frameIndex * sw + 1;
+      let sy = 1;
+      let sWidth = Math.max(0, sw - 2);
+      let sHeight = Math.max(0, sh - 2);
+
+      if (!isCapturing) {
+        // Only use the bottom 16px for the thrown ball to keep it centered during rotation
+        sy = Math.max(0, sh - 16);
+        sHeight = 16;
+      }
+
+      const dw = baseBallSize;
+      const dh = isCapturing ? baseBallSize * aspect : baseBallSize;
+      
+      ctx.save();
+      ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
+      if (!isCapturing) {
+        ctx.rotate(ball.progress * Math.PI * 4);
+      }
+      ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, -dw / 2, -dh / 2, dw, dh);
+      ctx.restore();
+    });
+
+    // Draw Floating Messages
+    gameState.floatingMessages.forEach(msg => {
+      ctx.save();
+      const now = Date.now();
+      const elapsed = now - msg.startTime;
+      const progress = elapsed / msg.duration;
+      const alpha = 1 - progress;
+      
+      // Float upwards
+      const floatOffset = progress * 30;
+      
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 4;
+      ctx.font = 'bold 16px font-mono';
+      ctx.textAlign = 'center';
+      
+      const x = msg.pos.x + TILE_SIZE / 2;
+      const y = msg.pos.y - 12 - floatOffset;
+      
+      ctx.strokeText(msg.text, x, y);
+      ctx.fillText(msg.text, x, y);
+      ctx.restore();
+    });
+
     const nearbyNPCResult = findNearbyNPC(npcsRef.current, player.pos, player.dir);
     const nearbyNPC = nearbyNPCResult ? nearbyNPCResult.npc : null;
 
@@ -255,6 +362,10 @@ export default function GameCanvas() {
     ctx.restore();
   };
 
+  useEffect(() => {
+    drawRef.current = draw;
+  }, [draw]);
+
   const loop = (time: number) => {
     if (!lastTimeRef.current) lastTimeRef.current = time;
     const dt = time - lastTimeRef.current;
@@ -263,8 +374,8 @@ export default function GameCanvas() {
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) {
       ctx.imageSmoothingEnabled = false;
-      update(dt);
-      draw(ctx);
+      updateRef.current(dt);
+      drawRef.current(ctx);
     }
 
     requestAnimationFrame(loop);

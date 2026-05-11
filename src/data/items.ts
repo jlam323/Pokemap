@@ -1,4 +1,4 @@
-import { Item } from '../types';
+import { Item, BallSpriteConfig } from '../types';
 import { TILE_SIZE } from '../constants';
 
 export const INITIAL_ITEMS: Item[] = [
@@ -24,11 +24,105 @@ export const INITIAL_ITEMS: Item[] = [
   }
 ];
 
-export const ITEM_SPRITE_CONFIGS: Record<string, { basePath: string, frames: string[], idleFrame: string, actionSequence: string[] }> = {
+export const ITEM_SPRITE_CONFIGS: Record<string, BallSpriteConfig> = {
   'pokeball': {
     basePath: '/item',
-    frames: ['pokeball', 'pokeball-action-1', 'pokeball-action-2', 'pokeball-action-3', 'pokeball-action-4'],
-    idleFrame: 'pokeball',
-    actionSequence: ['pokeball-action-1', 'pokeball-action-2', 'pokeball-action-1', 'pokeball-action-2', 'pokeball-action-3', 'pokeball-action-4']
+    frames: ['pokeball-sheet'],
+    idleFrame: '2',
+    actionSequence: ['8', '10', '8', '10', '0', '1'],
+    isSheet: true,
+    sheetWidth: 13
   }
 };
+
+export const THROW_BALL_SPRITE_CONFIGS: Record<string, BallSpriteConfig> = {
+  'pokeball': {
+    basePath: '/item',
+    frames: ['pokeball-sheet'],
+    idleFrame: 'pokeball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'greatball': {
+    basePath: '/item',
+    frames: ['greatball-sheet'],
+    idleFrame: 'greatball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'ultraball': {
+    basePath: '/item',
+    frames: ['ultraball-sheet'],
+    idleFrame: 'ultraball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'quickball': {
+    basePath: '/item',
+    frames: ['quickball-sheet'],
+    idleFrame: 'quickball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'timerball': {
+    basePath: '/item',
+    frames: ['timerball-sheet'],
+    idleFrame: 'timerball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'diveball': {
+    basePath: '/item',
+    frames: ['diveball-sheet'],
+    idleFrame: 'diveball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'netball': {
+    basePath: '/item',
+    frames: ['netball-sheet'],
+    idleFrame: 'netball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'luxuryball': {
+    basePath: '/item',
+    frames: ['luxuryball-sheet'],
+    idleFrame: 'luxuryball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'specialball': {
+    basePath: '/item',
+    frames: ['specialball-sheet'],
+    idleFrame: 'specialball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'premierball': {
+    basePath: '/item',
+    frames: ['premierball-sheet'],
+    idleFrame: 'premierball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  },
+  'masterball': {
+    basePath: '/item',
+    frames: ['masterball-sheet'],
+    idleFrame: 'masterball-sheet',
+    actionSequence: [],
+    isSheet: true,
+    sheetWidth: 13
+  }
+};
+
