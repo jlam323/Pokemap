@@ -13,12 +13,20 @@ export const InventoryView = ({ inventory, onBack }: InventoryViewProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown' || e.key === 's') {
+      const key = e.key;
+      const isSelectionKey = key === 'Enter' || key === ' ' || key === 'z' || key === 'Space';
+      const isBackKey = key === 'Escape' || key === 'x' || key === 'Backspace' || key === 'p' || key === 'f';
+      const isUpKey = key === 'ArrowUp' || key === 'w';
+      const isDownKey = key === 'ArrowDown' || key === 's';
+
+      if (isDownKey) {
         setSelectedIndex(prev => (prev + 1) % Math.max(items.length, 1));
-      } else if (e.key === 'ArrowUp' || e.key === 'w') {
+      } else if (isUpKey) {
         setSelectedIndex(prev => (prev - 1 + items.length) % Math.max(items.length, 1));
-      } else if (e.key === 'x' || e.key === 'Backspace' || e.key === 'Escape' || e.key === 'p') {
+      } else if (isBackKey) {
         onBack();
+      } else if (isSelectionKey) {
+        // Handle selection if needed
       }
     };
 

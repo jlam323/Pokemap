@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { POKEMON_NPC_BASES } from '../../data/pokemon';
 
@@ -11,6 +11,20 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [itemsPerRow, setItemsPerRow] = useState(6);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    // Scroll the selected item into view
+    const selectedElement = itemRefs.current[selectedIndex];
+    if (selectedElement && scrollContainerRef.current) {
+      selectedElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
+    }
+  }, [selectedIndex]);
 
   useEffect(() => {
     const updateItemsPerRow = () => {
@@ -33,20 +47,28 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key;
       if (!POKEMON_NPC_BASES || POKEMON_NPC_BASES.length === 0) return;
+
+      const isSelectionKey = key === 'Enter' || key === ' ' || key === 'z' || key === 'Space';
+      const isBackKey = key === 'Escape' || key === 'x' || key === 'Backspace' || key === 'p' || key === 'f';
+      const isUpKey = key === 'ArrowUp' || key === 'w';
+      const isDownKey = key === 'ArrowDown' || key === 's';
+      const isLeftKey = key === 'ArrowLeft' || key === 'a';
+      const isRightKey = key === 'ArrowRight' || key === 'd';
       
-      if (e.key === 'ArrowRight' || e.key === 'd') {
+      if (isRightKey) {
         setSelectedIndex(prev => Math.min(prev + 1, POKEMON_NPC_BASES.length - 1));
-      } else if (e.key === 'ArrowLeft' || e.key === 'a') {
+      } else if (isLeftKey) {
         setSelectedIndex(prev => Math.max(prev - 1, 0));
-      } else if (e.key === 'ArrowDown' || e.key === 's') {
+      } else if (isDownKey) {
         setSelectedIndex(prev => Math.min(prev + itemsPerRow, POKEMON_NPC_BASES.length - 1));
-      } else if (e.key === 'ArrowUp' || e.key === 'w') {
+      } else if (isUpKey) {
         setSelectedIndex(prev => Math.max(prev - itemsPerRow, 0));
-      } else if (e.key === 'x' || e.key === 'Backspace' || e.key === 'Escape' || e.key === 'p' || e.key === 'f') {
+      } else if (isBackKey) {
         onBack();
-      } else if (e.key === 'z' || e.key === ' ' || e.key === 'Enter') {
-        // Handle selection if needed, currently just logging
+      } else if (isSelectionKey) {
+        // Handle selection if needed
         console.log('Selected:', selectedPokemon.name);
       }
     };
@@ -135,7 +157,7 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-1 scrollbar-hide bg-[#f0f0f0]">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-1 scrollbar-hide bg-[#f0f0f0]">
         <div 
           className="grid gap-0.5" 
           style={{ gridTemplateColumns: `repeat(${itemsPerRow}, minmax(0, 1fr))` }}
@@ -147,13 +169,15 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
             return (
               <div
                 key={pokemon.id}
-                className={`aspect-square border flex items-center justify-center relative overflow-hidden transition-all ${
-                  selected ? 'border-black bg-white z-10 shadow-lg' : 'border-transparent bg-black/5'
+                ref={el => itemRefs.current[i] = el}
+                onClick={() => setSelectedIndex(i)}
+                className={`aspect-square border flex items-center justify-center relative overflow-hidden transition-all cursor-pointer ${
+                  selected ? 'border-black bg-white z-10 shadow-lg' : 'border-transparent bg-black/5 hover:bg-black/10'
                 }`}
               >
                 {!caught && <div className="absolute inset-0 bg-black/10 z-0" />}
                 
-                <div className="w-[60%] h-[60%] flex items-center justify-center">
+                <div className="w-[85%] h-[85%] flex items-center justify-center">
                   {imgSize ? (
                     <div style={getSpriteStyle(pokemon.spriteSheet.index, caught)} />
                   ) : (
@@ -179,7 +203,7 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
       <div className="p-2 md:p-3 bg-white border-t-4 border-black shrink-0">
         <div className="flex items-center gap-3 md:gap-4">
           <div className={`w-12 h-12 md:w-16 md:h-16 border-2 border-black flex items-center justify-center shrink-0 ${isCaught ? 'bg-white' : 'bg-black/5'}`}>
-            <div className="w-[70%] h-[70%]">
+            <div className="w-[90%] h-[90%]">
               {imgSize && (
                 <div style={getSpriteStyle(selectedPokemon.spriteSheet.index, isCaught)} />
               )}

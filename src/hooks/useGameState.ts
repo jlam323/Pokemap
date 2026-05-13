@@ -11,9 +11,20 @@ import { prepareMapData } from '../lib/mapLogic';
  * 
  * @returns {GameState} The fully initialized starting game state.
  */
-export function getInitialGameState(): GameState {
+export function createInitialGameState(): GameState {
   const initialMap = ALL_MAPS[0];
   const { npcs, items, playerPos } = prepareMapData(initialMap.id, [], INITIAL_PLAYER);
+
+  // Load caught pokemon from storage if available
+  let caughtPokemonIds: string[] = [];
+  try {
+    const saved = localStorage.getItem('pokedex_progress');
+    if (saved) {
+      caughtPokemonIds = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.warn('Failed to load pokedex progress', e);
+  }
 
   return {
     player: { ...INITIAL_PLAYER, pos: playerPos },
@@ -28,7 +39,7 @@ export function getInitialGameState(): GameState {
     previousMapId: null,
     mapReturnPositions: {},
     collectedItemIds: [],
-    caughtPokemonIds: [],
+    caughtPokemonIds,
     inventory: {},
     menuState: 'CLOSED',
     isTransitioning: false,
@@ -50,7 +61,7 @@ export function getInitialGameState(): GameState {
  * @returns {Object} State, state setter, and various entity/position refs.
  */
 export function useGameState() {
-  const [gameState, setGameState] = useState<GameState>(getInitialGameState);
+  const [gameState, setGameState] = useState<GameState>(createInitialGameState);
 
   const playerRef = useRef<Entity>(gameState.player);
   const npcsRef = useRef<Entity[]>(gameState.npcs);
@@ -61,7 +72,14 @@ export function useGameState() {
 
   useEffect(() => {
     stateRef.current = gameState;
-  }, [gameState]);
+    
+    // Auto-save caught pokemon to storage 
+    try {
+      localStorage.setItem('pokedex_progress', JSON.stringify(gameState.caughtPokemonIds));
+    } catch (e) {
+      console.warn('Failed to save pokedex progress', e);
+    }
+  }, [gameState.caughtPokemonIds, gameState]);
 
   return {
     gameState,
