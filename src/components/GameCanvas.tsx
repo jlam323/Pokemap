@@ -307,6 +307,76 @@ export default function GameCanvas() {
     }
   };
 
+  // Capture animation
+  const drawVFX = (ctx: CanvasRenderingContext2D) => {
+    const now = Date.now();
+    gameState.vfx.forEach(effect => {
+      const elapsed = now - effect.startTime;
+      const progress = Math.min(elapsed / effect.duration, 1);
+      
+      ctx.save();
+      ctx.translate(effect.pos.x + 16, effect.pos.y + 16);
+
+      if (effect.type === 'success') {
+        const starCount = 5;
+        const opacity = 1 - progress;
+        
+        for (let i = 0; i < starCount; i++) {
+          const angle = -Math.PI / 2 + (i - 2) * 0.5; 
+          const speed = 50 + (i % 3) * 15;
+          const gravity = 120;
+          
+          // Draw trail
+          const trailLength = 16;
+          for (let j = 0; j < trailLength; j++) {
+            const p = Math.max(0, progress - j * 0.03);
+            if (p === 0 && j > 0) continue;
+            
+            const sx = Math.cos(angle) * speed * p;
+            const sy = Math.sin(angle) * speed * p + (0.5 * gravity * p * p);
+            
+            ctx.globalAlpha = opacity * (1 - j/trailLength);
+            ctx.fillStyle = j === 0 ? '#ffeb3b' : 'rgba(255, 235, 59, 0.4)';
+            const size = (6 - j * 0.5) * (1 - p * 0.3);
+            if (size <= 0) continue;
+
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - size);
+            ctx.lineTo(sx + size/2.5, sy - size/2.5);
+            ctx.lineTo(sx + size, sy);
+            ctx.lineTo(sx + size/2.5, sy + size/2.5);
+            ctx.lineTo(sx, sy + size);
+            ctx.lineTo(sx - size/2.5, sy + size/2.5);
+            ctx.lineTo(sx - size, sy);
+            ctx.lineTo(sx - size/2.5, sy - size/2.5);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+      } else {
+        // Failure puff / smoke
+        const cloudCount = 6;
+        const radius = progress * 25;
+        const opacity = (1 - progress) * 0.6;
+
+        for (let i = 0; i < cloudCount; i++) {
+          const angle = (i / cloudCount) * Math.PI * 2;
+          const dist = progress * 15;
+          const cx = Math.cos(angle) * dist;
+          const cy = Math.sin(angle) * dist;
+          
+          ctx.globalAlpha = opacity;
+          ctx.fillStyle = '#cccccc';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 8 * (1 - progress * 0.5), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      ctx.restore();
+    });
+  };
+
   const draw = (ctx: CanvasRenderingContext2D) => {
     const { width, height } = dimensionsRef.current;
     if (width === 0 || height === 0) return;
@@ -342,6 +412,7 @@ export default function GameCanvas() {
 
     // UI Overlays
     drawFloatingMessages(ctx);
+    drawVFX(ctx);
     drawInteractionPrompt(ctx);
 
     ctx.restore();

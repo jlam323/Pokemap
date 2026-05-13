@@ -110,6 +110,19 @@ export function GameEngine() {
         }));
       }
     }
+
+    if (currentState.vfx.length > 0) {
+      const now = Date.now();
+      const activeVfx = currentState.vfx.filter(
+        effect => now - effect.startTime < effect.duration
+      );
+      if (activeVfx.length !== currentState.vfx.length) {
+        setGameState(prev => ({
+          ...prev,
+          vfx: activeVfx
+        }));
+      }
+    }
   }, [updateNPCs, updatePlayer, updatePokeballs, stateRef, setGameState]);
 
   return {

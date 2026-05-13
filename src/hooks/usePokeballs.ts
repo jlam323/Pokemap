@@ -6,7 +6,7 @@ import { isAtPos } from '../lib/gameUtils';
 const MAX_DISTANCE = 10;
 const THROW_COOLDOWN = 500;
 const FRAME_DURATION = 150;
-const CATCH_PROBABILITY = 0.75;
+const CATCH_PROBABILITY = 0.6;
 
 interface usePokeballsProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -78,6 +78,26 @@ export function usePokeballs({
         ball.captureFrame = (ball.captureFrame || 0) + (dt / FRAME_DURATION);
         const sequence = ball.captureType === 'success' ? CATCH_SUCCESS_SEQUENCE : CATCH_FAILURE_SEQUENCE;
         
+        // Trigger VFX slightly before the last frame for a smoother transition
+        if (!ball.vfxTriggered && ball.captureFrame >= sequence.length - 2) {
+          ball.vfxTriggered = true;
+          const isSuccess = ball.captureType === 'success';
+          
+          setGameState(prev => ({
+            ...prev,
+            vfx: [
+              ...prev.vfx,
+              {
+                id: Math.random().toString(36).substr(2, 9),
+                type: isSuccess ? 'success' : 'failure',
+                pos: { ...ball.pos },
+                startTime: Date.now(),
+                duration: 800 // Faster VFX
+              }
+            ]
+          }));
+        }
+
         if (ball.captureFrame >= sequence.length) {
           if (ball.captureType === 'success') {
             const hitNpc = npcsRef.current.find(n => n.id === ball.hitEntityId);

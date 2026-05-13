@@ -75,6 +75,7 @@ export interface Pokeball {
   captureFrame?: number;
   captureType?: 'success' | 'failure';
   ballType?: string;
+  vfxTriggered?: boolean;
 }
 
 export interface FloatingMessage {
@@ -192,6 +193,14 @@ export interface Item {
   actionFrame?: number;
 }
 
+export interface VFX {
+  id: string;
+  type: 'success' | 'failure';
+  pos: Position;
+  startTime: number;
+  duration: number;
+}
+
 export interface GameState {
   player: Entity;
   npcs: Entity[];
@@ -209,6 +218,7 @@ export interface GameState {
   transitionType: 'fade' | 'flash' | 'circle';
   pokeballs: Pokeball[];
   floatingMessages: FloatingMessage[];
+  vfx: VFX[];
   hasInteractedWithNPC: boolean;
   hasInteractedWithItem: boolean;
 }

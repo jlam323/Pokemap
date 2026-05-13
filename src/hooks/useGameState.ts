@@ -32,6 +32,7 @@ export function getInitialGameState(): GameState {
     transitionType: 'fade',
     pokeballs: [],
     floatingMessages: [],
+    vfx: [],
     hasInteractedWithNPC: false,
     hasInteractedWithItem: false
   };
