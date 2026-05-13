@@ -112,21 +112,13 @@ export default function GameCanvas() {
     };
   }, [overlayMode]);
 
-  const draw = (ctx: CanvasRenderingContext2D) => {
-    const { width, height } = dimensionsRef.current;
-    if (width === 0 || height === 0) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const currentOverlay = displayedOverlayRef.current;
-    const mapConfig = currentMapRef.current;
+  const calculateViewParams = (width: number, height: number, currentOverlay: string, mapConfig: any) => {
     const overlayConfig = mapConfig.overlays[currentOverlay];
-    
     const totalMapWidth = overlayConfig.width * TILE_SIZE;
     const totalMapHeight = overlayConfig.height * TILE_SIZE;
     const isNone = currentOverlay === 'none';
 
     const isGBC = currentOverlay === 'gbc';
-    const isGBA = currentOverlay === 'gba';
     const isMobile = width < 768;
     const minVisibleTiles = isNone ? (isMobile ? 20 : 50) : (isGBC ? 16 : 22); 
     const maxVisibleTiles = isNone ? (isMobile ? 35 : 80) : (isGBC ? 16 : 38); 
@@ -139,17 +131,9 @@ export default function GameCanvas() {
       targetScale *= width / (maxVisibleTiles * TILE_SIZE);
     }
 
-    const canvasWidth = Math.round(width);
-    const canvasHeight = Math.round(height);
     const scale = isNone ? targetScale : Math.round(targetScale * 4) / 4;
-
-    const logicalWidth = canvasWidth / scale;
-    const logicalHeight = canvasHeight / scale;
-    const currentState = stateRef.current;
-    
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, width * dpr, height * dpr);
-    ctx.scale(dpr, dpr);
+    const logicalWidth = width / scale;
+    const logicalHeight = height / scale;
 
     const player = playerRef.current;
     let targetCameraX = player.pos.x + TILE_SIZE / 2 - logicalWidth / 2;
@@ -164,247 +148,205 @@ export default function GameCanvas() {
     const offsetX = logicalWidth > totalMapWidth ? (logicalWidth - totalMapWidth) / 2 : 0;
     const offsetY = logicalHeight > totalMapHeight ? (logicalHeight - totalMapHeight) / 2 : 0;
 
-    ctx.save();
-    
-    const physicalX = Math.round((offsetX - targetCameraX) * scale);
-    const physicalY = Math.round((offsetY - targetCameraY) * scale);
-    
-    ctx.translate(physicalX, physicalY);
-    ctx.scale(scale, scale);
+    return { scale, targetCameraX, targetCameraY, offsetX, offsetY, totalMapWidth, totalMapHeight };
+  };
 
-    const currentMapImage = mapImages[mapConfig.id];
-    if (currentMapImage) {
-        ctx.drawImage(currentMapImage, 0, 0, totalMapWidth, totalMapHeight);
-    } else {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, totalMapWidth, totalMapHeight);
-    }
-
-    const spriteScale = mapConfig.spriteScaleMultiplier || 1;
-
-    // Collect all renderable entities for Y-sorting
+  const collectRenderTasks = (ctx: CanvasRenderingContext2D, spriteScale: number) => {
     type RenderTask = { y: number; draw: () => void };
-    const renderTasks: RenderTask[] = [];
+    const tasks: RenderTask[] = [];
 
-    // 1. Add NPCs
+    // 1. NPCs
     npcsRef.current.forEach(npc => {
       const isBeingCaptured = pokeballsRef.current.some(b => b.isCapturing && b.hitEntityId === npc.id);
       if (isBeingCaptured) return;
 
-      renderTasks.push({
+      tasks.push({
         y: npc.pos.y,
         draw: () => drawPixelSprite(
-          ctx, 
-          npc.pos.x, 
-          npc.pos.y, 
-          npc.dir, 
-          npc.walkFrame || 0, 
-          npc.isSurfing || false, 
-          npcImages,
-          npc.spriteName,
-          npc.bumpOffset,
-          spriteScale,
-          npc.scale,
-          npc.isActionActive,
-          npc.spriteSheet
+          ctx, npc.pos.x, npc.pos.y, npc.dir, npc.walkFrame || 0, npc.isSurfing || false, 
+          npcImages, npc.spriteName, npc.bumpOffset, spriteScale, npc.scale, npc.isActionActive, npc.spriteSheet
         )
       });
     });
 
-    // 2. Add Items
+    // 2. Items
     itemsRef.current.forEach(item => {
       if (item.isCollected) return;
-      
       const images = itemImages[item.spriteName];
-      if (!images) return;
-
       const config = ITEM_SPRITE_CONFIGS[item.spriteName];
-      
-      if (config?.isSheet) {
-        const sheetImgName = config.frames[0];
-        const sheetImg = images[sheetImgName];
-        if (!sheetImg) return;
+      if (!images || !config?.isSheet) return;
 
-        renderTasks.push({
-          y: item.pos.y,
-          draw: () => {
-            let frameIndexStr: string;
-            if (item.isActionActive && item.actionFrame && config.actionSequence) {
-              const seqIndex = Math.min(item.actionFrame - 1, config.actionSequence.length - 1);
-              frameIndexStr = config.actionSequence[seqIndex];
-            } else {
-              frameIndexStr = config.idleFrame || '0';
-            }
-            
-            const frameIndex = parseInt(frameIndexStr);
-            const sw = sheetImg.width / (config.sheetWidth || 1);
-            const sh = sheetImg.height;
-            const scale = (item.scale || 1.0) * spriteScale;
-            
-            const dw = sw * scale;
-            const dh = sh * scale;
-            
-            const sx = frameIndex * sw + 1;
-            const sy = 1;
-            const sWidth = Math.max(0, sw - 2);
-            const sHeight = Math.max(0, sh - 2);
+      const sheetImg = images[config.frames[0]];
+      if (!sheetImg) return;
 
-            ctx.imageSmoothingEnabled = false;
-            const xOffset = (dw - TILE_SIZE) / 2;
-            const yOffset = dh - TILE_SIZE;
-            
-            ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
-          }
-        });
-      }
+      tasks.push({
+        y: item.pos.y,
+        draw: () => {
+          let frameIndexStr = (item.isActionActive && item.actionFrame && config.actionSequence) 
+            ? config.actionSequence[Math.min(item.actionFrame - 1, config.actionSequence.length - 1)]
+            : config.idleFrame || '0';
+          
+          const frameIndex = parseInt(frameIndexStr);
+          const sw = sheetImg.width / (config.sheetWidth || 1);
+          const sh = sheetImg.height;
+          const scale = (item.scale || 1.0) * spriteScale;
+          const dw = sw * scale, dh = sh * scale;
+          
+          // 1px inset for spritesheets
+          const sx = frameIndex * sw + 1, sy = 1, sWidth = Math.max(0, sw - 2), sHeight = Math.max(0, sh - 2);
+
+          ctx.imageSmoothingEnabled = false;
+          const xOffset = (dw - TILE_SIZE) / 2, yOffset = dh - TILE_SIZE;
+          ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, Math.round(item.pos.x - xOffset), Math.round(item.pos.y - yOffset), dw, dh);
+        }
+      });
     });
 
-    // 3. Add Player
-    renderTasks.push({
-      y: player.pos.y,
+    // 3. Player
+    tasks.push({
+      y: playerRef.current.pos.y,
       draw: () => drawPixelSprite(
-        ctx, 
-        player.pos.x, 
-        player.pos.y, 
-        player.dir, 
-        player.walkFrame, 
-        player.isSurfing, 
-        playerImages, 
-        undefined, 
-        player.bumpOffset, 
-        spriteScale, 
-        player.scale, 
-        player.isActionActive
+        ctx, playerRef.current.pos.x, playerRef.current.pos.y, playerRef.current.dir, 
+        playerRef.current.walkFrame, playerRef.current.isSurfing, playerImages, 
+        undefined, playerRef.current.bumpOffset, spriteScale, playerRef.current.scale, playerRef.current.isActionActive
       )
     });
 
-    // 4. Add Pokeballs
+    // 4. Pokeballs
     pokeballsRef.current.forEach(ball => {
-      renderTasks.push({
+      tasks.push({
         y: ball.pos.y,
         draw: () => {
-          const isCapturing = ball.isCapturing;
           const ballType = ball.ballType || 'pokeball';
           const images = itemImages[ballType];
           const config = THROW_BALL_SPRITE_CONFIGS[ballType] || ITEM_SPRITE_CONFIGS[ballType];
-          
-          const sheetImgName = `${ballType}-sheet`;
-          const sheetImg = images?.[sheetImgName];
+          const sheetImg = images?.[`${ballType}-sheet`];
           
           if (!images || !config?.isSheet || !sheetImg) {
             const ballImg = (images ? (images[ballType] || Object.values(images)[0]) : null) as HTMLImageElement;
             if (!ballImg) return;
-            const baseBallSize = 24;
             ctx.save();
             ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
             ctx.rotate(ball.progress * Math.PI * 4);
-            ctx.drawImage(ballImg, -baseBallSize / 2, -baseBallSize / 2, baseBallSize, baseBallSize);
+            ctx.drawImage(ballImg, -12, -12, 24, 24);
             ctx.restore();
             return;
           }
 
-          const baseBallSize = 24;
-          let frameIndex = 0;
-          if (isCapturing) {
-            const sequence = ball.captureType === 'success' ? CATCH_SUCCESS_SEQUENCE : CATCH_FAILURE_SEQUENCE;
-            frameIndex = sequence[Math.floor(ball.captureFrame || 0)] || 0;
-          } else {
-            frameIndex = 2;
-          }
+          let frameIndex = ball.isCapturing 
+            ? (ball.captureType === 'success' ? CATCH_SUCCESS_SEQUENCE : CATCH_FAILURE_SEQUENCE)[Math.floor(ball.captureFrame || 0)] || 0
+            : 2;
             
-          const sw = sheetImg.width / (config.sheetWidth || 1);
-          const sh = sheetImg.height;
-          const aspect = sh / sw;
+          const sw = sheetImg.width / (config.sheetWidth || 1), sh = sheetImg.height;
+          let sx = frameIndex * sw + 1, sy = 1, sWidth = sw - 2, sHeight = sh - 2;
 
-          let sx = frameIndex * sw + 1;
-          let sy = 1;
-          let sWidth = Math.max(0, sw - 2);
-          let sHeight = Math.max(0, sh - 2);
+          if (!ball.isCapturing) { sy = Math.max(0, sh - 16); sHeight = 16; }
 
-          if (!isCapturing) {
-            sy = Math.max(0, sh - 16);
-            sHeight = 16;
-          }
-
-          const dw = baseBallSize;
-          const dh = isCapturing ? baseBallSize * aspect : baseBallSize;
-          
           ctx.save();
           ctx.translate(ball.pos.x + TILE_SIZE / 2, ball.pos.y + TILE_SIZE / 2);
-          if (!isCapturing) {
-            ctx.rotate(ball.progress * Math.PI * 4);
-          }
-          ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, -dw / 2, -dh / 2, dw, dh);
+          if (!ball.isCapturing) ctx.rotate(ball.progress * Math.PI * 4);
+          ctx.drawImage(sheetImg, sx, sy, sWidth, sHeight, -12, ball.isCapturing ? -12 * (sh/sw) : -12, 24, ball.isCapturing ? 24 * (sh/sw) : 24);
           ctx.restore();
         }
       });
     });
 
-    // Execute Y-Sorted Rendering
-    renderTasks.sort((a, b) => a.y - b.y);
-    renderTasks.forEach(task => task.draw());
+    return tasks;
+  };
 
-    // Draw Floating Messages
+  const drawFloatingMessages = (ctx: CanvasRenderingContext2D) => {
+    const delay = 1000;
     gameState.floatingMessages.forEach(msg => {
-      ctx.save();
-      const now = Date.now();
-      const elapsed = now - msg.startTime;
-      
-      const delay = 1000; // 1 second delay
-      let alpha = 1;
-      let floatOffset = 0;
+      const elapsed = Date.now() - msg.startTime;
+      let alpha = 1, floatOffset = 0;
 
       if (elapsed > delay) {
-        const animDuration = Math.max(msg.duration - delay, 1);
-        const animElapsed = Math.min(elapsed - delay, animDuration);
-        const progress = animElapsed / animDuration;
+        const progress = Math.min((elapsed - delay) / Math.max(msg.duration - delay, 1), 1);
         alpha = 1 - progress;
         floatOffset = progress * 30;
       }
       
+      ctx.save();
       ctx.globalAlpha = Math.max(0, alpha);
       ctx.fillStyle = 'white';
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 4;
       ctx.font = 'bold 16px font-mono';
       ctx.textAlign = 'center';
-      
-      const x = msg.pos.x + TILE_SIZE / 2;
-      const y = msg.pos.y - 12 - floatOffset;
-      
-      ctx.strokeText(msg.text, x, y);
-      ctx.fillText(msg.text, x, y);
+      ctx.strokeText(msg.text, msg.pos.x + 16, msg.pos.y - 12 - floatOffset);
+      ctx.fillText(msg.text, msg.pos.x + 16, msg.pos.y - 12 - floatOffset);
       ctx.restore();
     });
+  };
+
+  const drawInteractionPrompt = (ctx: CanvasRenderingContext2D) => {
+    const player = playerRef.current;
+    const currentState = stateRef.current;
+    if (currentState.isTalking) return;
 
     const nearbyNPCResult = findNearbyNPC(npcsRef.current, player.pos, player.dir);
-    const nearbyNPC = nearbyNPCResult ? nearbyNPCResult.npc : null;
-
     const nearbyItemResult = findNearbyItem(itemsRef.current, player.pos, player.dir);
-    const nearbyItem = nearbyItemResult ? nearbyItemResult.item : null;
+
+    const nearbyNPC = nearbyNPCResult?.npc;
+    const nearbyItem = nearbyItemResult?.item;
 
     const isNearbyNPC = !!nearbyNPC && nearbyNPC.type === EntityType.NPC;
     const isNearbyItem = !!nearbyItem;
 
-    const shouldShowPrompt = 
-        (isNearbyNPC && !currentState.hasInteractedWithNPC) || 
-        (isNearbyItem && !currentState.hasInteractedWithItem);
+    const shouldShowPrompt = (isNearbyNPC && !currentState.hasInteractedWithNPC) || (isNearbyItem && !currentState.hasInteractedWithItem);
 
-    if (shouldShowPrompt && !currentState.isTalking) {
-        ctx.fillStyle = 'white';
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 4;
-        ctx.font = 'bold 14px font-mono';
-        const text = nearbyNPC ? 'PRESS SPACE TO TALK' : 'PRESS SPACE TO PICK UP';
-        const textWidth = ctx.measureText(text).width;
-        const textX = player.pos.x + 16 - textWidth/2;
-        const textY = player.pos.y - 15;
-        ctx.strokeText(text, textX, textY);
-        ctx.fillText(text, textX, textY);
+    if (shouldShowPrompt) {
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 4;
+      ctx.font = 'bold 14px font-mono';
+      const text = nearbyNPC ? 'PRESS SPACE TO TALK' : 'PRESS SPACE TO PICK UP';
+      const textWidth = ctx.measureText(text).width;
+      ctx.strokeText(text, player.pos.x + 16 - textWidth/2, player.pos.y - 15);
+      ctx.fillText(text, player.pos.x + 16 - textWidth/2, player.pos.y - 15);
     }
+  };
+
+  const draw = (ctx: CanvasRenderingContext2D) => {
+    const { width, height } = dimensionsRef.current;
+    if (width === 0 || height === 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const currentOverlay = displayedOverlayRef.current;
+    const mapConfig = currentMapRef.current;
+    
+    const { scale, targetCameraX, targetCameraY, offsetX, offsetY, totalMapWidth, totalMapHeight } = calculateViewParams(width, height, currentOverlay, mapConfig);
+    
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, width * dpr, height * dpr);
+    ctx.scale(dpr, dpr);
+
+    ctx.save();
+    ctx.translate(Math.round((offsetX - targetCameraX) * scale), Math.round((offsetY - targetCameraY) * scale));
+    ctx.scale(scale, scale);
+
+    // Draw Map
+    const currentMapImage = mapImages[mapConfig.id];
+    if (currentMapImage) {
+      ctx.drawImage(currentMapImage, 0, 0, totalMapWidth, totalMapHeight);
+    } else {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, totalMapWidth, totalMapHeight);
+    }
+
+    // Y-Sorted Entities
+    const spriteScale = mapConfig.spriteScaleMultiplier || 1;
+    const renderTasks = collectRenderTasks(ctx, spriteScale);
+    renderTasks.sort((a, b) => a.y - b.y);
+    renderTasks.forEach(task => task.draw());
+
+    // UI Overlays
+    drawFloatingMessages(ctx);
+    drawInteractionPrompt(ctx);
 
     ctx.restore();
   };
+
 
   useEffect(() => {
     drawRef.current = draw;

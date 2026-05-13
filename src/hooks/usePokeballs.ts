@@ -6,7 +6,7 @@ import { isAtPos } from '../lib/gameUtils';
 const MAX_DISTANCE = 10;
 const THROW_COOLDOWN = 500;
 const FRAME_DURATION = 150;
-const CATCH_PROBABILITY = 0.5;
+const CATCH_PROBABILITY = 0.75;
 
 interface usePokeballsProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
