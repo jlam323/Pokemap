@@ -16,6 +16,7 @@ export const drawPixelSprite = (
   scaleMultiplier: number = 1,
   entityScale?: number,
   isActionActive: boolean = false,
+  isThrowing: boolean = false,
   spriteSheet?: {
     name: string;
     index: number;
@@ -63,6 +64,8 @@ export const drawPixelSprite = (
     
     if (spriteImages[spriteName || '']) {
       spriteKey = spriteName || '';
+    } else if (isThrowing) {
+      spriteKey = `throw-${dir}`;
     } else if (isActionActive && spriteName) {
       spriteKey = `${spriteName}-action`;
     } else if (isSurfing) {

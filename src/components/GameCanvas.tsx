@@ -163,7 +163,8 @@ export default function GameCanvas() {
         y: npc.pos.y,
         draw: () => drawPixelSprite(
           ctx, npc.pos.x, npc.pos.y, npc.dir, npc.walkFrame || 0, npc.isSurfing || false, 
-          npcImages, npc.spriteName, npc.bumpOffset, spriteScale, npc.scale, npc.isActionActive, npc.spriteSheet
+          npcImages, npc.spriteName, npc.bumpOffset, spriteScale, npc.scale, npc.isActionActive, 
+          false, npc.spriteSheet
         )
       });
     });
@@ -207,7 +208,8 @@ export default function GameCanvas() {
       draw: () => drawPixelSprite(
         ctx, playerRef.current.pos.x, playerRef.current.pos.y, playerRef.current.dir, 
         playerRef.current.walkFrame, playerRef.current.isSurfing, playerImages, 
-        undefined, playerRef.current.bumpOffset, spriteScale, playerRef.current.scale, playerRef.current.isActionActive
+        undefined, playerRef.current.bumpOffset, spriteScale, playerRef.current.scale, 
+        playerRef.current.isActionActive, playerRef.current.isThrowing
       )
     });
 

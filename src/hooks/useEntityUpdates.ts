@@ -164,6 +164,14 @@ export function useEntityUpdates({
     if (isTalking) return;
     if (currentState.isTransitioning && !isAutoSteppingRef.current) return;
 
+    if (player.isThrowing && player.throwTimer !== undefined) {
+      player.throwTimer -= dt;
+      if (player.throwTimer <= 0) {
+        player.isThrowing = false;
+        player.throwTimer = 0;
+      }
+    }
+
     if (isBumpingRef.current) {
       bumpTimerRef.current += dt;
       const progress = Math.min(bumpTimerRef.current / BUMP_DURATION, 1);

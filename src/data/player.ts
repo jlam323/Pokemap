@@ -20,7 +20,8 @@ export const PLAYER_SPRITE_CONFIG: PlayerSpriteConfig = {
     'surf-down-1', 'surf-down-2',
     'surf-up-1', 'surf-up-2',
     'surf-left-1', 'surf-left-2',
-    'surf-right-1', 'surf-right-2'
+    'surf-right-1', 'surf-right-2',
+    'throw-down', 'throw-up', 'throw-left', 'throw-right'
   ]
 };
 

@@ -68,9 +68,18 @@ export function usePokeballs({
 
     pokeballsRef.current.push(newBall);
     
+    // Set player throwing state
+    playerRef.current.isThrowing = true;
+    playerRef.current.throwTimer = 300; // 300ms duration
+    
     // Force a re-render
     setGameState(prev => ({
       ...prev,
+      player: {
+        ...prev.player,
+        isThrowing: true,
+        throwTimer: 300
+      },
       pokeballs: [...pokeballsRef.current]
     }));
   }, [playerRef, setGameState, stateRef]);

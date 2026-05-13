@@ -167,6 +167,8 @@ export interface Entity {
   npcType?: NPCType;
   isActionActive?: boolean;
   actionTrigger?: ActionTrigger;
+  isThrowing?: boolean;
+  throwTimer?: number;
   scale?: number;
   spriteSheet?: {
     name: string;
