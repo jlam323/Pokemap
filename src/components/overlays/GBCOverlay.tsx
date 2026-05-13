@@ -7,13 +7,11 @@ import { GameState } from '../../types';
 interface GBCOverlayProps {
   children: React.ReactNode;
   gameState: GameState;
-  handleInteraction: () => void;
-  handleThrow: () => void;
   keysPressed: React.RefObject<Set<string>>;
 }
 
 // GAMEBOY COLOR OVERLAY
-export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow, keysPressed }: GBCOverlayProps) => {
+export const GBCOverlay = ({ children, gameState, keysPressed }: GBCOverlayProps) => {
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -70,7 +68,11 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             <div className="absolute w-[32%] h-[32%] bg-[#222]" />
             <button 
               className="absolute top-0 w-[32%] h-[34%] rounded-t-sm hover:bg-black active:-translate-y-0.5 transition-all text-white/10 flex items-center justify-center outline-none" 
-              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('w'); }} 
+              onPointerDown={(e) => { 
+                e.currentTarget.setPointerCapture(e.pointerId); 
+                keysPressed.current?.add('w');
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+              }} 
               onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('w'); }}
               onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('w'); }}
             >
@@ -78,7 +80,11 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             </button>
             <button 
               className="absolute bottom-0 w-[32%] h-[34%] rounded-b-sm hover:bg-black active:translate-y-0.5 transition-all text-white/10 flex items-center justify-center outline-none" 
-              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('s'); }} 
+              onPointerDown={(e) => { 
+                e.currentTarget.setPointerCapture(e.pointerId); 
+                keysPressed.current?.add('s'); 
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+              }} 
               onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('s'); }}
               onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('s'); }}
             >
@@ -86,7 +92,11 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             </button>
             <button 
               className="absolute left-0 w-[34%] h-[32%] rounded-l-sm hover:bg-black active:-translate-x-0.5 transition-all text-white/10 flex items-center justify-center outline-none" 
-              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('a'); }} 
+              onPointerDown={(e) => { 
+                e.currentTarget.setPointerCapture(e.pointerId); 
+                keysPressed.current?.add('a'); 
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+              }} 
               onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('a'); }}
               onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('a'); }}
             >
@@ -94,7 +104,11 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             </button>
             <button 
               className="absolute right-0 w-[34%] h-[32%] rounded-r-sm hover:bg-black active:translate-x-0.5 transition-all text-white/10 flex items-center justify-center outline-none" 
-              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('d'); }} 
+              onPointerDown={(e) => { 
+                e.currentTarget.setPointerCapture(e.pointerId); 
+                keysPressed.current?.add('d'); 
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+              }} 
               onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('d'); }}
               onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('d'); }}
             >
@@ -107,18 +121,20 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             <motion.div variants={itemVariants} className="flex flex-col items-center gap-[1vh] translate-y-[1.5vh]">
               <button 
                 onPointerDown={(e) => { 
-                  e.currentTarget.setPointerCapture(e.pointerId); 
-                  keysPressed.current?.add('f');
-                  handleThrow(); 
-                }} 
-                onPointerUp={(e) => {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                  keysPressed.current?.delete('f');
-                }}
-                onPointerCancel={(e) => {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                  keysPressed.current?.delete('f');
-                }}
+                e.currentTarget.setPointerCapture(e.pointerId); 
+                keysPressed.current?.add('f');
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f' }));
+              }} 
+              onPointerUp={(e) => {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+                keysPressed.current?.delete('f');
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }));
+              }}
+              onPointerCancel={(e) => {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+                keysPressed.current?.delete('f');
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }));
+              }}
                 className="w-[6vh] h-[6vh] rounded-full bg-[#8b1d44] shadow-[0.4vh_0.4vh_0px_rgba(0,0,0,0.2),inset_-0.2vh_-0.2vh_0.4vh_rgba(0,0,0,0.3)] active:translate-y-[0.2vh] active:shadow-none transition-all flex items-center justify-center text-white/20 font-bold text-[2vh] border-[0.2vh] border-white/5 outline-none"
               >
                 B
@@ -127,18 +143,20 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             <motion.div variants={itemVariants} className="flex flex-col items-center gap-[1vh] -translate-y-[0.8vh]">
               <button 
                 onPointerDown={(e) => { 
-                  e.currentTarget.setPointerCapture(e.pointerId); 
-                  keysPressed.current?.add('enter');
-                  handleInteraction(); 
-                }} 
-                onPointerUp={(e) => {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                  keysPressed.current?.delete('enter');
-                }}
-                onPointerCancel={(e) => {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                  keysPressed.current?.delete('enter');
-                }}
+                e.currentTarget.setPointerCapture(e.pointerId); 
+                keysPressed.current?.add('z');
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
+              }} 
+              onPointerUp={(e) => {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+                keysPressed.current?.delete('z');
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
+              }}
+              onPointerCancel={(e) => {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+                keysPressed.current?.delete('z');
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
+              }}
                 className="w-[6vh] h-[6vh] rounded-full bg-[#8b1d44] shadow-[0.4vh_0.4vh_0px_rgba(0,0,0,0.2),inset_-0.2vh_-0.2vh_0.4vh_rgba(0,0,0,0.3)] active:translate-y-[0.2vh] active:shadow-none transition-all flex items-center justify-center text-white/20 font-bold text-[2vh] border-[0.2vh] border-white/5 outline-none"
               >
                 A
@@ -151,7 +169,11 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             <div className="flex flex-col items-center gap-[0.5vh]">
               <button 
                 className="w-[5.5vh] h-[1.2vh] bg-[#999] rounded-full shadow-md active:translate-y-[0.1vh] cursor-pointer border border-black/10 outline-none" 
-                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('Backspace'); }}
+                onPointerDown={(e) => { 
+                  e.currentTarget.setPointerCapture(e.pointerId); 
+                  keysPressed.current?.add('Backspace'); 
+                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' }));
+                }}
                 onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Backspace'); }}
                 onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Backspace'); }}
               />
@@ -160,9 +182,13 @@ export const GBCOverlay = ({ children, gameState, handleInteraction, handleThrow
             <div className="flex flex-col items-center gap-[0.5vh]">
               <button 
                 className="w-[5.5vh] h-[1.2vh] bg-[#999] rounded-full shadow-md active:translate-y-[0.1vh] cursor-pointer border border-black/10 outline-none" 
-                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysPressed.current?.add('Enter'); }}
-                onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Enter'); }}
-                onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Enter'); }}
+                onPointerDown={(e) => { 
+                    e.currentTarget.setPointerCapture(e.pointerId); 
+                    keysPressed.current?.add('p');
+                    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' }));
+                }}
+                onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('p'); }}
+                onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('p'); }}
               />
               <p className="text-[1vh] text-black/40 font-bold uppercase tracking-widest">START</p>
             </div>

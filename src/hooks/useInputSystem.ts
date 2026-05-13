@@ -4,31 +4,37 @@ import { Direction } from '../types';
 interface InputSystemProps {
   handleInteraction: () => void;
   handleThrow: () => void;
+  handleToggleMenu: () => void;
 }
 
 /**
  * Hook to manage player input via keyboard and virtual directional pad.
  * 
  * It tracks physical key states ('keydown'/'keyup') and provides handlers 
- * for UI-based arrow controls. It also manages the interaction trigger (Enter/Space).
+ * for UI-based arrow controls. It also manages the interaction trigger (A/B/Start).
  * 
  * @param props - Interaction handler to trigger when action keys are pressed.
  * @returns {Object} keysPressed ref and directional arrow handlers.
  */
-export function useInputSystem({ handleInteraction, handleThrow }: InputSystemProps) {
+export function useInputSystem({ handleInteraction, handleThrow, handleToggleMenu }: InputSystemProps) {
   const keysPressed = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       keysPressed.current.add(key);
-      if (key === ' ' || key === 'enter') {
+      
+      if (key === ' ' || key === 'z') {
         e.preventDefault();
         handleInteraction();
       }
       if (key === 'f') {
         e.preventDefault();
         handleThrow();
+      }
+      if (key === 'p' || key === 'enter' || key === 'escape' || key === 'm') {
+        e.preventDefault();
+        handleToggleMenu();
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -47,26 +53,30 @@ export function useInputSystem({ handleInteraction, handleThrow }: InputSystemPr
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [handleInteraction, handleThrow]);
+  }, [handleInteraction, handleThrow, handleToggleMenu]);
 
   const handleArrowDown = useCallback((dir: Direction) => {
     const keyMap: Record<Direction, string> = {
-      up: 'arrowup',
-      down: 'arrowdown',
-      left: 'arrowleft',
-      right: 'arrowright'
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      left: 'ArrowLeft',
+      right: 'ArrowRight'
     };
-    keysPressed.current.add(keyMap[dir]);
+    const key = keyMap[dir];
+    keysPressed.current.add(key.toLowerCase());
+    window.dispatchEvent(new KeyboardEvent('keydown', { key }));
   }, []);
 
   const handleArrowUp = useCallback((dir: Direction) => {
     const keyMap: Record<Direction, string> = {
-      up: 'arrowup',
-      down: 'arrowdown',
-      left: 'arrowleft',
-      right: 'arrowright'
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      left: 'ArrowLeft',
+      right: 'ArrowRight'
     };
-    keysPressed.current.delete(keyMap[dir]);
+    const key = keyMap[dir];
+    keysPressed.current.delete(key.toLowerCase());
+    window.dispatchEvent(new KeyboardEvent('keyup', { key }));
   }, []);
 
   return {

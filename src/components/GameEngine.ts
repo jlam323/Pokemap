@@ -44,11 +44,24 @@ export function GameEngine() {
 
   const { spawnPokeball, updatePokeballs, pokeballsRef } = usePokeballs({
     setGameState,
+    stateRef,
     playerRef,
     npcsRef,
     itemsRef,
     initCollisionMap
   });
+
+  const toggleMenu = useCallback(() => {
+    setGameState(prev => {
+      // Don't open menu if talking or transitioning
+      if (prev.isTalking || prev.isTransitioning) return prev;
+      
+      return {
+        ...prev,
+        menuState: prev.menuState === 'CLOSED' ? 'MAIN' : 'CLOSED'
+      };
+    });
+  }, [setGameState]);
 
   const {
     keysPressed,
@@ -56,7 +69,8 @@ export function GameEngine() {
     handleArrowUp
   } = useInputSystem({
     handleInteraction,
-    handleThrow: spawnPokeball
+    handleThrow: spawnPokeball,
+    handleToggleMenu: toggleMenu
   });
 
   const {
@@ -94,8 +108,10 @@ export function GameEngine() {
 
   const update = useCallback((dt: number) => {
     const currentState = stateRef.current;
-    updateNPCs(dt, currentState.isTalking, currentState.isTransitioning);
-    updatePlayer(dt, currentState.isTalking, currentState);
+    const isPaused = currentState.isTalking || currentState.isTransitioning || currentState.menuState !== 'CLOSED';
+    
+    updateNPCs(dt, isPaused, currentState.isTransitioning);
+    updatePlayer(dt, isPaused, currentState);
     updatePokeballs(dt);
 
     if (currentState.floatingMessages.length > 0) {
@@ -135,8 +151,6 @@ export function GameEngine() {
     pokeballsRef,
     keysPressed,
     update,
-    handleInteraction,
-    handleThrow: spawnPokeball,
     handleArrowDown,
     handleArrowUp,
     changeMap,

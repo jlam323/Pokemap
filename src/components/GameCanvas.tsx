@@ -9,6 +9,7 @@ import { useAssets } from '../hooks/useAssets';
 import { ITEM_SPRITE_CONFIGS, THROW_BALL_SPRITE_CONFIGS } from '../data/items';
 import { TOGGLEABLE_MAPS } from '../data/maps';
 import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, TILE_SIZE } from '../constants';
+import { MenuOverlay } from './ui/MenuOverlay';
 import { drawPixelSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import { EntityType } from '../types';
@@ -35,8 +36,6 @@ export default function GameCanvas() {
     pokeballsRef,
     keysPressed,
     update,
-    handleInteraction,
-    handleThrow,
     handleArrowDown,
     handleArrowUp,
     changeMap,
@@ -455,6 +454,12 @@ export default function GameCanvas() {
           imageRendering: 'pixelated',
         }}
       />
+      {/* Menu Overlay */}
+      <MenuOverlay 
+        gameState={gameState} 
+        setGameState={setGameState} 
+        overlayMode={overlayMode}
+      />
       {/* Map Transition Fade Overlay - Nested within the canvas container */}
       <AnimatePresence>
         {gameState.isTransitioning && (
@@ -570,8 +575,6 @@ export default function GameCanvas() {
             {renderCanvas()}
             <NoOverlay 
               gameState={gameState}
-              handleInteraction={handleInteraction}
-              handleThrow={handleThrow}
               handleArrowDown={handleArrowDown}
               handleArrowUp={handleArrowUp}
             />
@@ -598,8 +601,6 @@ export default function GameCanvas() {
                 >
                   <GBCOverlay 
                      gameState={gameState} 
-                     handleInteraction={handleInteraction} 
-                     handleThrow={handleThrow}
                      keysPressed={keysPressed}
                   >
                     <div ref={containerRef} className="w-full h-full">
@@ -619,8 +620,6 @@ export default function GameCanvas() {
                 >
                   <GBAOverlay 
                      gameState={gameState} 
-                     handleInteraction={handleInteraction} 
-                     handleThrow={handleThrow}
                      keysPressed={keysPressed}
                   >
                     <div ref={containerRef} className="w-full h-full">

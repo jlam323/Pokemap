@@ -10,6 +10,7 @@ const CATCH_PROBABILITY = 0.6;
 
 interface usePokeballsProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  stateRef: MutableRefObject<GameState>;
   playerRef: MutableRefObject<Entity>;
   npcsRef: MutableRefObject<Entity[]>;
   itemsRef: MutableRefObject<Item[]>;
@@ -26,7 +27,8 @@ const FAILURE_PHRASES = [
  * Hook to manage throwing and tracking pokeballs.
  */
 export function usePokeballs({ 
-  setGameState, 
+  setGameState,
+  stateRef,
   playerRef, 
   npcsRef, 
   itemsRef, 
@@ -38,9 +40,13 @@ export function usePokeballs({
   const spawnPokeball = useCallback(() => {
     const now = Date.now();
     if (now - lastThrowTimeRef.current < THROW_COOLDOWN) return;
-    lastThrowTimeRef.current = now;
 
     const player = playerRef.current;
+    const currentState = stateRef.current;
+    if (currentState.menuState !== 'CLOSED') return; // Don't throw if menu is open
+
+    // Pokeballs are now infinite
+    lastThrowTimeRef.current = now;
     const { x, y } = player.pos;
     const dir = player.dir;
 
@@ -62,12 +68,12 @@ export function usePokeballs({
 
     pokeballsRef.current.push(newBall);
     
-    // Force a re-render so the component knows we added something
+    // Force a re-render
     setGameState(prev => ({
       ...prev,
       pokeballs: [...pokeballsRef.current]
     }));
-  }, [playerRef, setGameState]);
+  }, [playerRef, setGameState, stateRef]);
 
   const updatePokeballs = useCallback((dt: number) => {
     if (pokeballsRef.current.length === 0) return;
@@ -102,6 +108,7 @@ export function usePokeballs({
           if (ball.captureType === 'success') {
             const hitNpc = npcsRef.current.find(n => n.id === ball.hitEntityId);
             const pokemonName = hitNpc?.name || 'Pokémon';
+            const pokemonSprite = hitNpc?.spriteName || '';
             
             // Update the ref directly for the engine/renderer
             npcsRef.current = npcsRef.current.filter(n => n.id !== ball.hitEntityId);
@@ -109,21 +116,29 @@ export function usePokeballs({
             // Update collision map
             initCollisionMap(playerRef.current, npcsRef.current, itemsRef.current);
 
-            // Captured! Remove pokemon from state
-            setGameState(prev => ({
-              ...prev,
-              npcs: prev.npcs.filter(n => n.id !== ball.hitEntityId),
-              floatingMessages: [
-                ...prev.floatingMessages,
-                {
-                  id: Math.random().toString(36).substr(2, 9),
-                  text: `Caught a ${pokemonName}!`,
-                  pos: { ...ball.pos },
-                  duration: 2000,
-                  startTime: Date.now()
-                }
-              ]
-            }));
+            // Captured! Remove pokemon from state and add to caught list
+            setGameState(prev => {
+              const newCaught = [...prev.caughtPokemonIds];
+              if (pokemonSprite && !newCaught.includes(pokemonSprite)) {
+                newCaught.push(pokemonSprite);
+              }
+
+              return {
+                ...prev,
+                npcs: prev.npcs.filter(n => n.id !== ball.hitEntityId),
+                caughtPokemonIds: newCaught,
+                floatingMessages: [
+                  ...prev.floatingMessages,
+                  {
+                    id: Math.random().toString(36).substr(2, 9),
+                    text: `Caught a ${pokemonName}!`,
+                    pos: { ...ball.pos },
+                    duration: 2000,
+                    startTime: Date.now()
+                  }
+                ]
+              };
+            });
           } else {
             const phrase = FAILURE_PHRASES[Math.floor(Math.random() * FAILURE_PHRASES.length)];
             

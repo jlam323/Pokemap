@@ -201,6 +201,8 @@ export interface VFX {
   duration: number;
 }
 
+export type MenuState = 'CLOSED' | 'MAIN' | 'POKEDEX' | 'INVENTORY' | 'DETAILS';
+
 export interface GameState {
   player: Entity;
   npcs: Entity[];
@@ -214,6 +216,9 @@ export interface GameState {
   previousMapId: number | null;
   mapReturnPositions: Record<number, Position>; // Track where to return for each map
   collectedItemIds: string[];
+  caughtPokemonIds: string[]; // Added: track caught pokemon
+  inventory: Record<string, number>; // Added: track items
+  menuState: MenuState; // Added: track active menu
   isTransitioning: boolean;
   transitionType: 'fade' | 'flash' | 'circle';
   pokeballs: Pokeball[];

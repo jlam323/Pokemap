@@ -6,16 +6,12 @@ import { GameState, Direction } from '../../types';
 
 interface NoOverlayProps {
   gameState: GameState;
-  handleInteraction: () => void;
-  handleThrow: () => void;
   handleArrowDown: (dir: Direction) => void;
   handleArrowUp: (dir: Direction) => void;
 }
 
 export function NoOverlay({ 
   gameState, 
-  handleInteraction, 
-  handleThrow,
   handleArrowDown, 
   handleArrowUp 
 }: NoOverlayProps) {
@@ -29,8 +25,22 @@ export function NoOverlay({
 
       {/* Mobile Controls - Only visible on small screens */}
       <div className="lg:hidden absolute inset-0 pointer-events-none select-none">
+        {/* Pokedex Button - Below D-Pad */}
+        <div className="absolute bottom-6 left-8 pointer-events-auto">
+          <button
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' }));
+            }}
+            className="px-5 h-11 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
+            aria-label="Menu"
+          >
+            <div className="text-white/80 font-black text-[11px] tracking-[1px] uppercase leading-none">Pokédex</div>
+          </button>
+        </div>
+
         {/* D-Pad */}
-        <div className="absolute bottom-15 left-8 pointer-events-auto">
+        <div className="absolute bottom-22 left-8 pointer-events-auto">
           <div className="grid grid-cols-3 gap-1">
             <div />
             <button 
@@ -79,16 +89,24 @@ export function NoOverlay({
         </div>
 
         {/* Action Buttons */}
-        <div className="absolute bottom-30 right-8 pointer-events-auto flex flex-col gap-4">
+        <div className="absolute bottom-30 right-8 pointer-events-auto flex flex-col gap-6 items-end">
           <button
-            onClick={handleInteraction}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
+            }}
+            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }))}
             className="w-16 h-16 translate-x-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
             aria-label="Action"
           >
             <div className="text-white font-black text-2xl tracking-tighter">A</div>
           </button>
           <button 
-            onClick={handleThrow}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f' }));
+            }}
+            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }))}
             className="w-16 h-16 -translate-x-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
             aria-label="Throw"
           >
@@ -119,6 +137,13 @@ export function NoOverlay({
           <div className="flex flex-col items-center gap-1">
             <kbd className="px-3 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest min-w-[50px] flex items-center justify-center">F</kbd>
             <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Throw Ball</span>
+          </div>
+        </div>
+        <div className="h-8 w-px bg-white/10" />
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <kbd className="px-3 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest min-w-[50px] flex items-center justify-center">P</kbd>
+            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Pokédex</span>
           </div>
         </div>
       </div>

@@ -121,9 +121,15 @@ export function useInteractions({
       } else {
         if (prev.talkingItemId) {
           const itemId = prev.talkingItemId;
+          const targetItem = prev.items.find(i => i.id === itemId);
           const updatedItems = prev.items.filter(item => item.id !== itemId);
           const newCollectedIds = [...prev.collectedItemIds, itemId];
           
+          const newInventory = { ...prev.inventory };
+          if (targetItem && targetItem.spriteName.includes('pokeball')) {
+             newInventory['pokeball'] = (newInventory['pokeball'] || 0) + 1;
+          }
+
           itemsRef.current = itemsRef.current.filter(item => item.id !== itemId);
           initCollisionMap(playerRef.current, npcsRef.current, itemsRef.current);
 
@@ -135,6 +141,7 @@ export function useInteractions({
             dialogueIndex: 0,
             items: updatedItems,
             collectedItemIds: newCollectedIds,
+            inventory: newInventory,
             hasInteractedWithItem: true
           };
         }
@@ -155,6 +162,8 @@ export function useInteractions({
 
   const handleInteraction = useCallback(() => {
     const currentState = stateRef.current;
+    if (currentState.menuState !== 'CLOSED') return;
+    
     if (currentState.isTalking) {
       nextDialogue();
       return;
