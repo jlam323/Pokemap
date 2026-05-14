@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { GameEngine } from './GameEngine';
@@ -13,6 +13,7 @@ import { MenuOverlay } from './ui/MenuOverlay';
 import { drawPixelSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import { EntityType } from '../types';
+import { NotificationBanner } from './ui/NotificationBanner';
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,6 +42,13 @@ export default function GameCanvas() {
     changeMap,
     currentMap
   } = GameEngine();
+
+  const handleDismissNotification = useCallback(() => {
+    setGameState(prev => ({ 
+      ...prev, 
+      catchNotifications: prev.catchNotifications.slice(1) 
+    }));
+  }, [setGameState]);
 
   const updateRef = useRef(update);
   const drawRef = useRef<(ctx: CanvasRenderingContext2D) => void>(() => {});
@@ -520,6 +528,12 @@ export default function GameCanvas() {
         <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 group-hover:-translate-x-1 transition-transform" />
         <span className="hidden sm:inline text-[9px] md:text-[10px] font-black tracking-[2px] md:tracking-[3px] uppercase">jonalam.com</span>
       </a>
+
+      {/* Notification Banner */}
+      <NotificationBanner 
+        notifications={gameState.catchNotifications} 
+        onDismiss={handleDismissNotification}
+      />
 
       {/* Mode Toggle Overlay - Always Visible */}
       <div className="fixed top-4 md:top-8 left-1/2 -translate-x-1/2 flex gap-1 z-[100] pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 p-1 rounded-md md:p-1.5 md:rounded-full shadow-2xl">

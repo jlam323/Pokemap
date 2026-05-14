@@ -62,7 +62,8 @@ export function createInitialGameState(): GameState {
     floatingMessages: [],
     vfx: [],
     hasInteractedWithNPC: false,
-    hasInteractedWithItem: false
+    hasInteractedWithItem: false,
+    catchNotifications: []
   };
 }
 

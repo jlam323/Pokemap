@@ -205,6 +205,12 @@ export interface VFX {
   duration: number;
 }
 
+export interface CatchNotification {
+  pokemonName: string;
+  pokemonSprite: string;
+  pokedexNumber: string;
+}
+
 export type MenuState = 'CLOSED' | 'MAIN' | 'POKEDEX' | 'INVENTORY' | 'DETAILS';
 
 export interface GameState {
@@ -230,4 +236,5 @@ export interface GameState {
   vfx: VFX[];
   hasInteractedWithNPC: boolean;
   hasInteractedWithItem: boolean;
+  catchNotifications: CatchNotification[];
 }

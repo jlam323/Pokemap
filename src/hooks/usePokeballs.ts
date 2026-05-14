@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useRef, MutableRefObject } from 'react';
 import { GameState, Pokeball, EntityType, Entity, Item } from '../types';
 import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, BALL_TYPES, TILE_SIZE } from '../constants';
+import { POKEMON_NPC_BASES } from '../data/pokemon';
 import { isAtPos } from '../lib/gameUtils';
 
 const MAX_DISTANCE = 10;
 const THROW_COOLDOWN = 500;
 const FRAME_DURATION = 150;
-const CATCH_PROBABILITY = 0.6;
+const CATCH_PROBABILITY = 0.7;
 
 interface usePokeballsProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -114,11 +115,16 @@ export function usePokeballs({
         }
 
         if (ball.captureFrame >= sequence.length) {
+          const hitNpc = npcsRef.current.find(n => n.id === ball.hitEntityId);
           if (ball.captureType === 'success') {
-            const hitNpc = npcsRef.current.find(n => n.id === ball.hitEntityId);
-            const pokemonName = hitNpc?.name || 'Pokémon';
             const pokemonSprite = hitNpc?.spriteName || '';
+            const pokemonName = hitNpc?.name || 'Pokémon';
             
+            // Find pokedex number
+            const pokedexEntry = POKEMON_NPC_BASES.find(p => p.spriteName === pokemonSprite);
+            const pokedexIndex = POKEMON_NPC_BASES.findIndex(p => p.spriteName === pokemonSprite);
+            const pokedexNumber = pokedexIndex !== -1 ? (pokedexIndex + 1).toString().padStart(3, '0') : '???';
+
             // Update the ref directly for the engine/renderer
             npcsRef.current = npcsRef.current.filter(n => n.id !== ball.hitEntityId);
 
@@ -128,14 +134,23 @@ export function usePokeballs({
             // Captured! Remove pokemon from state and add to caught list
             setGameState(prev => {
               const newCaught = [...prev.caughtPokemonIds];
+              const newNotifications = [...prev.catchNotifications];
+
               if (pokemonSprite && !newCaught.includes(pokemonSprite)) {
                 newCaught.push(pokemonSprite);
+                // Trigger notification for new capture
+                newNotifications.push({
+                  pokemonName,
+                  pokemonSprite,
+                  pokedexNumber: `#${pokedexNumber}`
+                });
               }
 
               return {
                 ...prev,
                 npcs: prev.npcs.filter(n => n.id !== ball.hitEntityId),
                 caughtPokemonIds: newCaught,
+                catchNotifications: newNotifications,
                 floatingMessages: [
                   ...prev.floatingMessages,
                   {

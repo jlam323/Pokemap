@@ -158,8 +158,8 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
       exit={{ scale: 0.9, opacity: 0 }}
       className="bg-white border-4 border-black w-full h-[95%] md:h-[90%] max-w-4xl flex flex-col shadow-[8px_8px_0px_rgba(0,0,0,0.2)] overflow-hidden"
     >
-      <div className="bg-black p-2 md:p-3 flex justify-between items-center shrink-0">
-        <span className={`text-white font-black tracking-[4px] ${getFontSize('text-[12px]', 'text-[14px]')}`}>POKÉDEX</span>
+      <div className="bg-black p-1.75 md:p-2.75 flex justify-between items-center shrink-0">
+        <span className={`text-white font-black tracking-[4px] ${getFontSize('text-[11px]', 'text-[14px]')}`}>POKÉDEX</span>
         <div className="flex gap-2">
           <span className={`text-white/40 font-bold tracking-[1px] uppercase ${getFontSize('text-[7px]', 'text-[12px]')}`}>Caught: {caughtIds.length}</span>
         </div>
@@ -208,9 +208,9 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
         </div>
       </div>
 
-      <div className="p-2 md:p-3 bg-white border-t-4 border-black shrink-0">
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className={`w-12 h-12 md:w-16 md:h-16 border-2 border-black flex items-center justify-center shrink-0 ${isCaught ? 'bg-white' : 'bg-black/5'}`}>
+      <div className="p-1.5 md:p-2 bg-white border-t-4 border-black shrink-0">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className={`w-10 h-10 md:w-14 md:h-14 border-2 border-black flex items-center justify-center shrink-0 ${isCaught ? 'bg-white' : 'bg-black/5'}`}>
             <div className="w-[90%] h-[90%]">
               {imgSize && (
                 <div style={getSpriteStyle(selectedPokemon.spriteSheet.index, isCaught)} />
@@ -219,13 +219,13 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <span className={`font-black tracking-[2px] ${getFontSize('text-[13px]', 'text-[16px]')}`}>{isCaught ? selectedPokemon.name : `??? (No. ${(selectedIndex + 1).toString().padStart(3,'0')})`}</span>
+              <span className={`font-black tracking-[2px] ${getFontSize('text-[12px]', 'text-[15px]')}`}>{isCaught ? selectedPokemon.name : `??? (No. ${(selectedIndex + 1).toString().padStart(3,'0')})`}</span>
               {isCaught && selectedPokemon.battleTypes && selectedPokemon.battleTypes.length > 0 && (
                 <div className="flex gap-1 mt-0.5">
                   {selectedPokemon.battleTypes.map(type => (
                     <span 
                       key={type} 
-                      className={`${TYPE_COLORS[type] || 'bg-gray-400'} text-white text-[6px] md:text-[8px] px-2 py-0.5 rounded font-black tracking-[1px] uppercase border border-black/20 shadow-sm`}
+                      className={`${TYPE_COLORS[type] || 'bg-gray-400'} text-white text-[5px] md:text-[8px] px-2 py-0.5 rounded font-black tracking-[1px] uppercase border border-black/20 shadow-sm`}
                     >
                       {type}
                     </span>
@@ -233,12 +233,12 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
                 </div>
               )}
             </div>
-            <p className={`font-bold text-black/50 tracking-[1px] mt-1 leading-relaxed ${getFontSize('text-[10px]', 'text-[14px]')}`}>
-              {isCaught ? 'THIS POKÉMON HAS BEEN SUCCESSFULLY CAPTURED AND DOCUMENTED.' : 'NOT MUCH IS KNOWN ABOUT THIS POKÉMON YET. CAPTURE IT TO LEARN MORE.'}
+            <p className={`font-bold text-black/50 tracking-[1px] mt-0.5 leading-tight ${getFontSize('text-[9px]', 'text-[13px]')}`}>
+              {isCaught ? 'THIS POKÉMON HAS BEEN SUCCESSFULLY CAPTURED AND DOCUMENTED.' : 'NOT MUCH IS KNOWN ABOUT THIS POKÉMON YET.'}
             </p>
           </div>
         </div>
-        <div className="mt-1 md:mt-2 flex justify-end">
+        <div className="mt-0.5 md:mt-1 flex justify-end">
             <span className={`font-black tracking-[2px] text-black/30 ${getFontSize('text-[8px]', 'text-[11px]')}`}>[B] TO BACK</span>
         </div>
       </div>
