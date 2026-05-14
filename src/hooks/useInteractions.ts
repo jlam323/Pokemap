@@ -126,8 +126,9 @@ export function useInteractions({
           const newCollectedIds = [...prev.collectedItemIds, itemId];
           
           const newInventory = { ...prev.inventory };
-          if (targetItem && targetItem.spriteName.includes('pokeball')) {
-             newInventory['pokeball'] = (newInventory['pokeball'] || 0) + 1;
+          if (targetItem) {
+            const itemKey = targetItem.name;
+            newInventory[itemKey] = (newInventory[itemKey] || 0) + 1;
           }
 
           itemsRef.current = itemsRef.current.filter(item => item.id !== itemId);

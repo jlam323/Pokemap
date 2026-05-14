@@ -13,18 +13,32 @@ import { prepareMapData } from '../lib/mapLogic';
  */
 export function createInitialGameState(): GameState {
   const initialMap = ALL_MAPS[0];
-  const { npcs, items, playerPos } = prepareMapData(initialMap.id, [], INITIAL_PLAYER);
 
-  // Load caught pokemon from storage if available
+  // Load caught pokemon and inventory from storage if available
   let caughtPokemonIds: string[] = [];
+  let inventory: Record<string, number> = {};
+  let collectedItemIds: string[] = [];
+
   try {
-    const saved = localStorage.getItem('pokedex_progress');
-    if (saved) {
-      caughtPokemonIds = JSON.parse(saved);
+    const savedPokedex = localStorage.getItem('pokedex_progress');
+    if (savedPokedex) {
+      caughtPokemonIds = JSON.parse(savedPokedex);
+    }
+    
+    const savedInventory = localStorage.getItem('inventory_progress');
+    if (savedInventory) {
+      inventory = JSON.parse(savedInventory);
+    }
+
+    const savedCollectedItems = localStorage.getItem('collected_items_progress');
+    if (savedCollectedItems) {
+      collectedItemIds = JSON.parse(savedCollectedItems);
     }
   } catch (e) {
-    console.warn('Failed to load pokedex progress', e);
+    console.warn('Failed to load progress', e);
   }
+
+  const { npcs, items, playerPos } = prepareMapData(initialMap.id, collectedItemIds, INITIAL_PLAYER);
 
   return {
     player: { ...INITIAL_PLAYER, pos: playerPos },
@@ -38,9 +52,9 @@ export function createInitialGameState(): GameState {
     currentMapId: initialMap.id,
     previousMapId: null,
     mapReturnPositions: {},
-    collectedItemIds: [],
+    collectedItemIds,
     caughtPokemonIds,
-    inventory: {},
+    inventory,
     menuState: 'CLOSED',
     isTransitioning: false,
     transitionType: 'fade',
@@ -72,14 +86,18 @@ export function useGameState() {
 
   useEffect(() => {
     stateRef.current = gameState;
-    
-    // Auto-save caught pokemon to storage 
+  }, [gameState]);
+
+  // Separate effect for persistence
+  useEffect(() => {
     try {
       localStorage.setItem('pokedex_progress', JSON.stringify(gameState.caughtPokemonIds));
+      localStorage.setItem('inventory_progress', JSON.stringify(gameState.inventory));
+      localStorage.setItem('collected_items_progress', JSON.stringify(gameState.collectedItemIds));
     } catch (e) {
-      console.warn('Failed to save pokedex progress', e);
+      console.warn('Failed to save progress', e);
     }
-  }, [gameState.caughtPokemonIds, gameState]);
+  }, [gameState.caughtPokemonIds, gameState.inventory, gameState.collectedItemIds]);
 
   return {
     gameState,

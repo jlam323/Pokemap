@@ -116,6 +116,7 @@ export interface NPCBase {
   npcType?: NPCType;
   actionTrigger?: ActionTrigger;
   scale?: number;
+  battleTypes?: string[];
   spriteSheet?: {
     name: string;
     index: number;
@@ -184,6 +185,7 @@ export interface Entity {
 export interface Item {
   id: string;
   name: string;
+  description: string;
   pos: Position;
   spriteIndex: number;
   spriteName: string;

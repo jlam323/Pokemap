@@ -16,6 +16,13 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverla
   const [resetSelectedIndex, setResetSelectedIndex] = useState(0);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
   const isNoneOverlay = overlayMode === 'none';
+
+  // Helper to get responsive font sizes based on overlay mode
+  const getFontSize = (baseSize: string, mdSize: string) => {
+    if (overlayMode !== 'none') return baseSize; // Force small on overlays
+    return `${baseSize} md:${mdSize}`;
+  };
+
   const menuOptions: { label: string; state: MenuState | 'RESET' }[] = [
     { label: 'Pokédex', state: 'POKEDEX' },
     { label: 'Inventory', state: 'INVENTORY' },
@@ -97,7 +104,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverla
             className="bg-white border-4 border-black w-3/4 max-w-xs shadow-[8px_8px_0px_rgba(0,0,0,0.2)]"
           >
             <div className="p-4 flex flex-col gap-2">
-              <h2 className="text-black font-black text-xs tracking-[4px] border-b-2 border-black/10 pb-2 mb-2">MENU</h2>
+              <h2 className={`text-black font-black tracking-[4px] border-b-2 border-black/10 pb-2 mb-2 ${getFontSize('text-[10px]', 'text-xs')}`}>MENU</h2>
               {menuOptions.map((opt, i) => (
                 <div
                   key={opt.label}
@@ -114,7 +121,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverla
                   }`}
                 >
                   {selectedIndex === i && <span className="w-2 h-2 bg-white rotate-45" />}
-                  <span className="font-black text-sm tracking-[2px]">{opt.label}</span>
+                  <span className={`font-black tracking-[2px] ${getFontSize('text-xs', 'text-sm')}`}>{opt.label}</span>
                 </div>
               ))}
             </div>
@@ -172,6 +179,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverla
           <PokedexView 
             caughtIds={gameState.caughtPokemonIds} 
             onBack={() => setGameState(prev => ({ ...prev, menuState: 'MAIN' }))}
+            overlayMode={overlayMode}
           />
         )}
 
@@ -179,6 +187,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverla
           <InventoryView 
             inventory={gameState.inventory} 
             onBack={() => setGameState(prev => ({ ...prev, menuState: 'MAIN' }))}
+            overlayMode={overlayMode}
           />
         )}
       </div>

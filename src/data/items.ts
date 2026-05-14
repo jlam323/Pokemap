@@ -4,7 +4,8 @@ import { TILE_SIZE } from '../constants';
 export const INITIAL_ITEMS: Item[] = [
   {
     id: 'pokeball-1',
-    name: 'Poké Ball',
+    name: 'Job Application',
+    description: 'Guess it\'s time to stop loafing around.',
     pos: { x: TILE_SIZE * 19, y: TILE_SIZE * 35 },
     spriteIndex: 0,
     spriteName: 'pokeball',
@@ -14,7 +15,8 @@ export const INITIAL_ITEMS: Item[] = [
   },
   {
     id: 'pokeball-2',
-    name: 'Poké Ball',
+    name: '(Stolen) Poké Ball',
+    description: 'Hope no one saw me take this.',
     pos: { x: TILE_SIZE * 11, y: TILE_SIZE * 4 },
     spriteIndex: 0,
     spriteName: 'pokeball',

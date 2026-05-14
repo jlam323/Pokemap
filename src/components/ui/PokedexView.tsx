@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { POKEMON_NPC_BASES } from '../../data/pokemon';
+import { TYPE_COLORS } from '../../constants';
 
 interface PokedexViewProps {
   caughtIds: string[];
   onBack: () => void;
+  overlayMode: 'none' | 'gbc' | 'gba';
 }
 
-export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
+export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [itemsPerRow, setItemsPerRow] = useState(6);
@@ -99,6 +101,12 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
 
   const isCaught = (caughtIds || []).includes(selectedPokemon.spriteName);
 
+  // Helper to get responsive font sizes based on overlay mode
+  const getFontSize = (baseSize: string, largeSize: string) => {
+    if (overlayMode !== 'none') return baseSize; // Force small on overlays
+    return `${largeSize} md:${baseSize}`;
+  };
+
   const getSpriteStyle = (index: number, caught: boolean) => {
     if (!imgSize) return {};
     
@@ -151,9 +159,9 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
       className="bg-white border-4 border-black w-full h-[95%] md:h-[90%] max-w-4xl flex flex-col shadow-[8px_8px_0px_rgba(0,0,0,0.2)] overflow-hidden"
     >
       <div className="bg-black p-2 md:p-3 flex justify-between items-center shrink-0">
-        <h2 className="text-white font-black text-[10px] tracking-[4px]">POKÉDEX</h2>
+        <span className={`text-white font-black tracking-[4px] ${getFontSize('text-[12px]', 'text-[14px]')}`}>POKÉDEX</span>
         <div className="flex gap-2">
-          <span className="text-white/40 text-[8px] font-bold tracking-[1px] uppercase">Caught: {caughtIds.length}</span>
+          <span className={`text-white/40 font-bold tracking-[1px] uppercase ${getFontSize('text-[7px]', 'text-[12px]')}`}>Caught: {caughtIds.length}</span>
         </div>
       </div>
 
@@ -186,7 +194,7 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
                 </div>
                 
                 {selected && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black text-white text-[5px] font-black tracking-[1px] text-center py-0.5 uppercase z-20">
+                  <div className={`absolute bottom-0 left-0 right-0 bg-black text-white font-black tracking-[1px] text-center py-0.5 uppercase z-20 ${getFontSize('text-[7px]', 'text-[6px]')}`}>
                     {caught ? pokemon.name : '???'}
                   </div>
                 )}
@@ -211,16 +219,27 @@ export const PokedexView = ({ caughtIds = [], onBack }: PokedexViewProps) => {
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-                <span className="text-[9px] md:text-[10px] font-black tracking-[2px]">{isCaught ? selectedPokemon.name : `??? (No. ${(selectedIndex + 1).toString().padStart(3,'0')})`}</span>
-                {isCaught && <span className="text-[7px] md:text-[8px] bg-black text-white px-1.5 py-0.5 rounded font-black tracking-[1px]">LV 20</span>}
+              <span className={`font-black tracking-[2px] ${getFontSize('text-[13px]', 'text-[16px]')}`}>{isCaught ? selectedPokemon.name : `??? (No. ${(selectedIndex + 1).toString().padStart(3,'0')})`}</span>
+              {isCaught && selectedPokemon.battleTypes && selectedPokemon.battleTypes.length > 0 && (
+                <div className="flex gap-1 mt-0.5">
+                  {selectedPokemon.battleTypes.map(type => (
+                    <span 
+                      key={type} 
+                      className={`${TYPE_COLORS[type] || 'bg-gray-400'} text-white text-[6px] md:text-[8px] px-2 py-0.5 rounded font-black tracking-[1px] uppercase border border-black/20 shadow-sm`}
+                    >
+                      {type}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-            <p className="text-[7px] md:text-[8px] font-bold text-black/50 tracking-[1px] mt-1 leading-relaxed">
+            <p className={`font-bold text-black/50 tracking-[1px] mt-1 leading-relaxed ${getFontSize('text-[10px]', 'text-[14px]')}`}>
               {isCaught ? 'THIS POKÉMON HAS BEEN SUCCESSFULLY CAPTURED AND DOCUMENTED.' : 'NOT MUCH IS KNOWN ABOUT THIS POKÉMON YET. CAPTURE IT TO LEARN MORE.'}
             </p>
           </div>
         </div>
         <div className="mt-1 md:mt-2 flex justify-end">
-            <span className="text-[6px] md:text-[7px] font-black tracking-[2px] text-black/30">[B] TO BACK</span>
+            <span className={`font-black tracking-[2px] text-black/30 ${getFontSize('text-[8px]', 'text-[11px]')}`}>[B] TO BACK</span>
         </div>
       </div>
     </motion.div>

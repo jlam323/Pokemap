@@ -35,10 +35,10 @@ export function prepareMapData(
 ): MapData {
   const targetMap = ALL_MAPS.find(m => m.id === mapId) || ALL_MAPS[0];
   
-  const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === targetMap.id);
+  const filteredNpcs = INITIAL_NPCS.filter(npc => npc.mapId === targetMap.id).map(npc => ({ ...npc }));
   const filteredItems = INITIAL_ITEMS.filter(item => 
-    item.mapId === targetMap.id && !collectedItemIds.includes(item.id)
-  );
+    item.mapId === targetMap.id
+  ).map(item => ({ ...item }));
   
   const playerPos = spawnPos || (mapReturnPositions?.[mapId] ? { ...mapReturnPositions[mapId] } : {
     x: targetMap.startPos.x * TILE_SIZE,

@@ -35,7 +35,7 @@ export function NoOverlay({
             className="px-5 h-11 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
             aria-label="Menu"
           >
-            <div className="text-white/80 font-black text-[11px] tracking-[1px] uppercase leading-none">Pokédex</div>
+            <div className="text-white/80 font-black text-[11px] tracking-[1px] uppercase leading-none">Menu</div>
           </button>
         </div>
 
@@ -143,7 +143,8 @@ export function NoOverlay({
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
             <kbd className="px-3 py-2 bg-white border-b-4 border-gray-300 rounded text-black text-[10px] font-black tracking-widest min-w-[50px] flex items-center justify-center">P</kbd>
-            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Pokédex</span>
+            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Pokédex &</span>
+            <span className="text-white/40 text-[9px] font-black tracking-widest uppercase">Inventory</span>
           </div>
         </div>
       </div>
