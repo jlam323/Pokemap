@@ -62,14 +62,17 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           keysPressed.current?.add('l');
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }));
         }}
         onPointerUp={(e) => {
           e.currentTarget.releasePointerCapture(e.pointerId);
           keysPressed.current?.delete('l');
+          window.dispatchEvent(new KeyboardEvent('keyup', { key: 'l' }));
         }}
         onPointerCancel={(e) => {
           e.currentTarget.releasePointerCapture(e.pointerId);
           keysPressed.current?.delete('l');
+          window.dispatchEvent(new KeyboardEvent('keyup', { key: 'l' }));
         }}
       >
         <span className="text-white/40 text-[1.5cqw] font-black">L</span>
@@ -82,14 +85,17 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           keysPressed.current?.add('r');
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
         }}
         onPointerUp={(e) => {
           e.currentTarget.releasePointerCapture(e.pointerId);
           keysPressed.current?.delete('r');
+          window.dispatchEvent(new KeyboardEvent('keyup', { key: 'r' }));
         }}
         onPointerCancel={(e) => {
           e.currentTarget.releasePointerCapture(e.pointerId);
           keysPressed.current?.delete('r');
+          window.dispatchEvent(new KeyboardEvent('keyup', { key: 'r' }));
         }}
       >
         <span className="text-white/40 text-[1.5cqw] font-black">R</span>
@@ -118,8 +124,16 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
                 keysPressed.current?.add('w'); 
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
             }} 
-            onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('w'); }}
-            onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('w'); }}
+            onPointerUp={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('w'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp' }));
+            }}
+            onPointerCancel={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('w'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp' }));
+            }}
           >
             <ArrowBigUp className="w-[70%] h-[70%]" />
           </button>
@@ -130,8 +144,16 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
                 keysPressed.current?.add('s'); 
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
             }} 
-            onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('s'); }}
-            onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('s'); }}
+            onPointerUp={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('s'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown' }));
+            }}
+            onPointerCancel={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('s'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown' }));
+            }}
           >
             <ArrowBigDown className="w-[70%] h-[70%]" />
           </button>
@@ -142,8 +164,16 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
                 keysPressed.current?.add('a'); 
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
             }} 
-            onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('a'); }}
-            onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('a'); }}
+            onPointerUp={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('a'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft' }));
+            }}
+            onPointerCancel={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('a'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft' }));
+            }}
           >
             <ArrowBigLeft className="w-[70%] h-[70%]" />
           </button>
@@ -154,8 +184,16 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
                 keysPressed.current?.add('d'); 
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
             }} 
-            onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('d'); }}
-            onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('d'); }}
+            onPointerUp={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('d'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight' }));
+            }}
+            onPointerCancel={(e) => { 
+              e.currentTarget.releasePointerCapture(e.pointerId); 
+              keysPressed.current?.delete('d'); 
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight' }));
+            }}
           >
             <ArrowBigRight className="w-[70%] h-[70%]" />
           </button>
@@ -176,8 +214,16 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
                 keysPressed.current?.add('Backspace'); 
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' }));
               }}
-              onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Backspace'); }}
-              onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('Backspace'); }}
+              onPointerUp={(e) => { 
+                e.currentTarget.releasePointerCapture(e.pointerId); 
+                keysPressed.current?.delete('Backspace'); 
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Backspace' }));
+              }}
+              onPointerCancel={(e) => { 
+                e.currentTarget.releasePointerCapture(e.pointerId); 
+                keysPressed.current?.delete('Backspace'); 
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Backspace' }));
+              }}
               aria-label="Select"
             />
           </motion.div>
@@ -193,8 +239,16 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
                 keysPressed.current?.add('p');
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' }));
               }}
-              onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('p'); }}
-              onPointerCancel={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysPressed.current?.delete('p'); }}
+              onPointerUp={(e) => { 
+                e.currentTarget.releasePointerCapture(e.pointerId); 
+                keysPressed.current?.delete('p'); 
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p' }));
+              }}
+              onPointerCancel={(e) => { 
+                e.currentTarget.releasePointerCapture(e.pointerId); 
+                keysPressed.current?.delete('p'); 
+                window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p' }));
+              }}
               aria-label="Start"
             />
           </motion.div>

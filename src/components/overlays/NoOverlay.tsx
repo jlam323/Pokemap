@@ -32,6 +32,14 @@ export function NoOverlay({
               e.currentTarget.setPointerCapture(e.pointerId);
               window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' }));
             }}
+            onPointerUp={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p' }));
+            }}
+            onPointerCancel={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p' }));
+            }}
             className="px-5 h-11 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
             aria-label="Menu"
           >
@@ -47,6 +55,7 @@ export function NoOverlay({
               onPointerDown={() => handleArrowDown('up')}
               onPointerUp={() => handleArrowUp('up')}
               onPointerLeave={() => handleArrowUp('up')}
+              onPointerCancel={() => handleArrowUp('up')}
               className="w-14 h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
               aria-label="Up"
             >
@@ -58,6 +67,7 @@ export function NoOverlay({
               onPointerDown={() => handleArrowDown('left')}
               onPointerUp={() => handleArrowUp('left')}
               onPointerLeave={() => handleArrowUp('left')}
+              onPointerCancel={() => handleArrowUp('left')}
               className="w-14 h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
               aria-label="Left"
             >
@@ -68,6 +78,7 @@ export function NoOverlay({
               onPointerDown={() => handleArrowDown('right')}
               onPointerUp={() => handleArrowUp('right')}
               onPointerLeave={() => handleArrowUp('right')}
+              onPointerCancel={() => handleArrowUp('right')}
               className="w-14 h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
               aria-label="Right"
             >
@@ -79,6 +90,7 @@ export function NoOverlay({
               onPointerDown={() => handleArrowDown('down')}
               onPointerUp={() => handleArrowUp('down')}
               onPointerLeave={() => handleArrowUp('down')}
+              onPointerCancel={() => handleArrowUp('down')}
               className="w-14 h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl flex items-center justify-center active:bg-white/20 active:scale-95 transition-all shadow-2xl"
               aria-label="Down"
             >
@@ -95,7 +107,14 @@ export function NoOverlay({
               e.currentTarget.setPointerCapture(e.pointerId);
               window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
             }}
-            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }))}
+            onPointerUp={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
+            }}
+            onPointerCancel={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
+            }}
             className="w-16 h-16 translate-x-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
             aria-label="Action"
           >
@@ -106,7 +125,14 @@ export function NoOverlay({
               e.currentTarget.setPointerCapture(e.pointerId);
               window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f' }));
             }}
-            onPointerUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }))}
+            onPointerUp={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }));
+            }}
+            onPointerCancel={(e) => {
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }));
+            }}
             className="w-16 h-16 -translate-x-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center active:bg-white/20 active:scale-90 transition-all shadow-2xl"
             aria-label="Throw"
           >
