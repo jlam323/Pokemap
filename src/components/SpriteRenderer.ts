@@ -64,14 +64,14 @@ export const drawPixelSprite = (
     
     if (spriteImages[spriteName || '']) {
       spriteKey = spriteName || '';
-    } else if (isThrowing) {
-      spriteKey = `throw-${dir}`;
-    } else if (isActionActive && spriteName) {
-      spriteKey = `${spriteName}-action`;
     } else if (isSurfing) {
       // Surfing has no neutral, uses 1 or 2
       const frame = walkFrame === 0 ? 1 : walkFrame; // Default to 1 if 0
       spriteKey = `surf-${dir}-${frame}`;
+    } else if (isThrowing) {
+      spriteKey = `throw-${dir}`;
+    } else if (isActionActive && spriteName) {
+      spriteKey = `${spriteName}-action`;
     } else if (spriteName) {
       // NPC naming convention: [spriteName]-neutral-[dir] or [spriteName]-walk-[dir]
       const isWalking = walkFrame > 0;
