@@ -7,11 +7,11 @@ interface PokedexViewProps {
   caughtIds: string[];
   onBack: () => void;
   overlayMode: 'none' | 'gbc' | 'gba';
+  pokemonSheet?: HTMLImageElement;
 }
 
-export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexViewProps) => {
+export const PokedexView = ({ caughtIds = [], onBack, overlayMode, pokemonSheet }: PokedexViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [itemsPerRow, setItemsPerRow] = useState(6);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -41,11 +41,7 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
     return () => window.removeEventListener('resize', updateItemsPerRow);
   }, []);
 
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setImgSize({ w: img.width, h: img.height });
-    img.src = '/pokemon/gen-1-overworld-pokemon.png';
-  }, []);
+  const imgSize = pokemonSheet ? { w: pokemonSheet.naturalWidth, h: pokemonSheet.naturalHeight } : null;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,7 +104,7 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
   };
 
   const getSpriteStyle = (index: number, caught: boolean) => {
-    if (!imgSize) return {};
+    if (!imgSize || !pokemonSheet) return {};
     
     // Standard sprite constants
     const spriteWidth = 32;
@@ -141,7 +137,7 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode }: PokedexView
     const bgPosY = (srcY / (imgSize.h - srcH)) * 100;
     
     return {
-      backgroundImage: `url('/pokemon/gen-1-overworld-pokemon.png')`,
+      backgroundImage: `url('${pokemonSheet.src}')`,
       backgroundSize: `${bgSizeW}% ${bgSizeH}%`,
       backgroundPosition: `${bgPosX}% ${bgPosY}%`,
       width: '100%',

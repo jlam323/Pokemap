@@ -8,9 +8,10 @@ interface MenuOverlayProps {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   overlayMode: 'none' | 'gbc' | 'gba';
+  pokemonSheet?: HTMLImageElement;
 }
 
-export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverlayProps) => {
+export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet }: MenuOverlayProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [resetSelectedIndex, setResetSelectedIndex] = useState(0);
@@ -180,6 +181,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode }: MenuOverla
             caughtIds={gameState.caughtPokemonIds} 
             onBack={() => setGameState(prev => ({ ...prev, menuState: 'MAIN' }))}
             overlayMode={overlayMode}
+            pokemonSheet={pokemonSheet}
           />
         )}
 

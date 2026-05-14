@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CatchNotification } from '../../types';
 import { POKEMON_NPC_BASES } from '../../data/pokemon';
@@ -6,16 +6,11 @@ import { POKEMON_NPC_BASES } from '../../data/pokemon';
 interface NotificationBannerProps {
   notifications: CatchNotification[];
   onDismiss: () => void;
+  pokemonSheet?: HTMLImageElement;
 }
 
-export const NotificationBanner = ({ notifications, onDismiss }: NotificationBannerProps) => {
-  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
-
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setImgSize({ w: img.width, h: img.height });
-    img.src = '/pokemon/gen-1-overworld-pokemon.png';
-  }, []);
+export const NotificationBanner = ({ notifications, onDismiss, pokemonSheet }: NotificationBannerProps) => {
+  const imgSize = pokemonSheet ? { w: pokemonSheet.naturalWidth, h: pokemonSheet.naturalHeight } : null;
 
   const current = notifications[0];
 
@@ -36,7 +31,7 @@ export const NotificationBanner = ({ notifications, onDismiss }: NotificationBan
   const spriteIndex = pokemonData?.spriteSheet?.index ?? 0;
 
   const getSpriteStyle = () => {
-    if (!imgSize) return {};
+    if (!imgSize || !pokemonSheet) return {};
     
     const spriteWidth = 32;
     const spriteHeight = 32;
@@ -62,7 +57,7 @@ export const NotificationBanner = ({ notifications, onDismiss }: NotificationBan
     const bgPosY = (srcY / (imgSize.h - srcH)) * 100;
     
     return {
-      backgroundImage: `url('/pokemon/gen-1-overworld-pokemon.png')`,
+      backgroundImage: `url('${pokemonSheet.src}')`,
       backgroundSize: `${bgSizeW}% ${bgSizeH}%`,
       backgroundPosition: `${bgPosX}% ${bgPosY}%`,
       width: '100%',

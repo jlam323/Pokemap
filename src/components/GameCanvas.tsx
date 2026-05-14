@@ -8,7 +8,7 @@ import { GBAOverlay } from './overlays/GBAOverlay';
 import { useAssets } from '../hooks/useAssets';
 import { ITEM_SPRITE_CONFIGS, THROW_BALL_SPRITE_CONFIGS } from '../data/items';
 import { TOGGLEABLE_MAPS } from '../data/maps';
-import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, TILE_SIZE } from '../constants';
+import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, TILE_SIZE, POKEMON_SPRITE_SHEET } from '../constants';
 import { MenuOverlay } from './ui/MenuOverlay';
 import { drawPixelSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
@@ -469,6 +469,7 @@ export default function GameCanvas() {
         gameState={gameState} 
         setGameState={setGameState} 
         overlayMode={overlayMode}
+        pokemonSheet={npcImages?.['_sheets']?.[POKEMON_SPRITE_SHEET]}
       />
       {/* Map Transition Fade Overlay - Nested within the canvas container */}
       <AnimatePresence>
@@ -533,6 +534,7 @@ export default function GameCanvas() {
       <NotificationBanner 
         notifications={gameState.catchNotifications} 
         onDismiss={handleDismissNotification}
+        pokemonSheet={npcImages?.['_sheets']?.[POKEMON_SPRITE_SHEET]}
       />
 
       {/* Mode Toggle Overlay - Always Visible */}
