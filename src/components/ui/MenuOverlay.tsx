@@ -49,6 +49,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet
             setGameState(prev => ({
               ...prev,
               caughtPokemonIds: [],
+              viewedPokemonIds: [],
               menuState: 'CLOSED'
             }));
           }
@@ -144,6 +145,7 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet
                   setGameState(prev => ({
                     ...prev,
                     caughtPokemonIds: [],
+                    viewedPokemonIds: [],
                     menuState: 'CLOSED'
                   }));
                   setShowConfirmReset(false);
@@ -179,6 +181,15 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet
         {gameState.menuState === 'POKEDEX' && (
           <PokedexView 
             caughtIds={gameState.caughtPokemonIds} 
+            viewedIds={gameState.viewedPokemonIds}
+            onView={(id) => {
+              if (!gameState.viewedPokemonIds.includes(id)) {
+                setGameState(prev => ({
+                  ...prev,
+                  viewedPokemonIds: [...prev.viewedPokemonIds, id]
+                }));
+              }
+            }}
             onBack={() => setGameState(prev => ({ ...prev, menuState: 'MAIN' }))}
             overlayMode={overlayMode}
             pokemonSheet={pokemonSheet}

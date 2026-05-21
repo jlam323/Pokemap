@@ -16,6 +16,7 @@ export function createInitialGameState(): GameState {
 
   // Load caught pokemon and inventory from storage if available
   let caughtPokemonIds: string[] = [];
+  let viewedPokemonIds: string[] = [];
   let inventory: Record<string, number> = {};
   let collectedItemIds: string[] = [];
 
@@ -23,6 +24,11 @@ export function createInitialGameState(): GameState {
     const savedPokedex = localStorage.getItem('pokedex_progress');
     if (savedPokedex) {
       caughtPokemonIds = JSON.parse(savedPokedex);
+    }
+
+    const savedViewed = localStorage.getItem('viewed_pokemon_progress');
+    if (savedViewed) {
+      viewedPokemonIds = JSON.parse(savedViewed);
     }
     
     const savedInventory = localStorage.getItem('inventory_progress');
@@ -54,6 +60,7 @@ export function createInitialGameState(): GameState {
     mapReturnPositions: {},
     collectedItemIds,
     caughtPokemonIds,
+    viewedPokemonIds,
     inventory,
     menuState: 'CLOSED',
     isTransitioning: false,
@@ -93,12 +100,13 @@ export function useGameState() {
   useEffect(() => {
     try {
       localStorage.setItem('pokedex_progress', JSON.stringify(gameState.caughtPokemonIds));
+      localStorage.setItem('viewed_pokemon_progress', JSON.stringify(gameState.viewedPokemonIds));
       localStorage.setItem('inventory_progress', JSON.stringify(gameState.inventory));
       localStorage.setItem('collected_items_progress', JSON.stringify(gameState.collectedItemIds));
     } catch (e) {
       console.warn('Failed to save progress', e);
     }
-  }, [gameState.caughtPokemonIds, gameState.inventory, gameState.collectedItemIds]);
+  }, [gameState.caughtPokemonIds, gameState.viewedPokemonIds, gameState.inventory, gameState.collectedItemIds]);
 
   return {
     gameState,

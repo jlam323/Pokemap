@@ -5,12 +5,14 @@ import { TYPE_COLORS } from '../../constants';
 
 interface PokedexViewProps {
   caughtIds: string[];
+  viewedIds: string[];
+  onView: (id: string) => void;
   onBack: () => void;
   overlayMode: 'none' | 'gbc' | 'gba';
   pokemonSheet?: HTMLImageElement;
 }
 
-export const PokedexView = ({ caughtIds = [], onBack, overlayMode, pokemonSheet }: PokedexViewProps) => {
+export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, overlayMode, pokemonSheet }: PokedexViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [itemsPerRow, setItemsPerRow] = useState(6);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -76,6 +78,12 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode, pokemonSheet 
   }, [itemsPerRow]);
 
   const selectedPokemon = POKEMON_NPC_BASES[selectedIndex];
+
+  useEffect(() => {
+    if (selectedPokemon && caughtIds.includes(selectedPokemon.spriteName)) {
+      onView(selectedPokemon.spriteName);
+    }
+  }, [selectedIndex, selectedPokemon, caughtIds, onView]);
   
   if (!POKEMON_NPC_BASES || POKEMON_NPC_BASES.length === 0) {
     return (
@@ -195,8 +203,8 @@ export const PokedexView = ({ caughtIds = [], onBack, overlayMode, pokemonSheet 
                   </div>
                 )}
                 
-                {caught && (
-                  <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-green-500 border border-black transform translate-x-1/2 -translate-y-1/2 rotate-45 z-20" />
+                {caught && !viewedIds.includes(pokemon.spriteName) && (
+                  <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 border border-black transform translate-x-1/2 -translate-y-1/2 rotate-45 z-20" />
                 )}
               </div>
             );

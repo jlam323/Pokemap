@@ -227,6 +227,7 @@ export interface GameState {
   mapReturnPositions: Record<number, Position>; // Track where to return for each map
   collectedItemIds: string[];
   caughtPokemonIds: string[]; // Added: track caught pokemon
+  viewedPokemonIds: string[]; // Track which caught pokemon have been viewed in the pokedex
   inventory: Record<string, number>; // Added: track items
   menuState: MenuState; // Added: track active menu
   isTransitioning: boolean;
