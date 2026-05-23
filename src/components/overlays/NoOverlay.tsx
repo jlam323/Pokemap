@@ -16,7 +16,7 @@ export function NoOverlay({
   handleArrowUp 
 }: NoOverlayProps) {
   return (
-    <div className="absolute inset-0 pointer-events-none select-none">
+    <div className="absolute inset-0 pointer-events-none select-none z-[110]">
       <AnimatePresence>
         {gameState.isTalking && (
           <DialogueBox gameState={gameState} minHeight="18vh" className="pl-[4.5vw] pr-[9vw] pt-[3vh] pb-[3.5vh]" />

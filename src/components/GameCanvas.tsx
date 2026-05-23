@@ -14,18 +14,19 @@ import { drawPixelSprite } from './SpriteRenderer';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import { EntityType } from '../types';
 import { NotificationBanner } from './ui/NotificationBanner';
+import { BattleView } from './battle/BattleView';
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [overlayMode, setOverlayMode] = useState<'none' | 'gbc' | 'gba'>('gbc');
+  const [overlayMode, setOverlayMode] = useState<'none' | 'gbc' | 'gba'>('none');
   const [displayedOverlayMode, setDisplayedOverlayMode] = useState(overlayMode);
   const displayedOverlayRef = useRef(displayedOverlayMode);
   const dimensionsRef = useRef(dimensions);
   const lastTimeRef = useRef<number>(0);
 
-  const { isLoaded, playerImages, npcImages, itemImages, mapImages } = useAssets();
+  const { isLoaded, playerImages, npcImages, itemImages, mapImages, battleImages } = useAssets();
 
   const {
     gameState,
@@ -300,16 +301,23 @@ export default function GameCanvas() {
     const nearbyItem = nearbyItemResult?.item;
 
     const isNearbyNPC = !!nearbyNPC && nearbyNPC.type === EntityType.NPC;
+    const isNearbyPokemon = !!nearbyNPC && nearbyNPC.type === EntityType.POKEMON && !nearbyNPC.isActionActive;
     const isNearbyItem = !!nearbyItem;
 
-    const shouldShowPrompt = (isNearbyNPC && !currentState.hasInteractedWithNPC) || (isNearbyItem && !currentState.hasInteractedWithItem);
+    const shouldShowPrompt = (isNearbyNPC && !currentState.hasInteractedWithNPC) || 
+                            isNearbyPokemon || 
+                            (isNearbyItem && !currentState.hasInteractedWithItem);
 
     if (shouldShowPrompt) {
       ctx.fillStyle = 'white';
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 4;
       ctx.font = 'bold 14px font-mono';
-      const text = nearbyNPC ? 'PRESS SPACE TO TALK' : 'PRESS SPACE TO PICK UP';
+      
+      let text = 'PRESS SPACE TO TALK';
+      if (isNearbyPokemon) text = 'PRESS SPACE TO BATTLE!';
+      else if (isNearbyItem) text = 'PRESS SPACE TO PICK UP';
+
       const textWidth = ctx.measureText(text).width;
       ctx.strokeText(text, player.pos.x + 16 - textWidth/2, player.pos.y - 15);
       ctx.fillText(text, player.pos.x + 16 - textWidth/2, player.pos.y - 15);
@@ -471,45 +479,6 @@ export default function GameCanvas() {
         overlayMode={overlayMode}
         pokemonSheet={npcImages?.['_sheets']?.[POKEMON_SPRITE_SHEET]}
       />
-      {/* Map Transition Fade Overlay - Nested within the canvas container */}
-      <AnimatePresence>
-        {gameState.isTransitioning && (
-          <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            {gameState.transitionType === 'fade' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="absolute inset-0 bg-black"
-              />
-            )}
-            
-            {gameState.transitionType === 'circle' && (
-              <motion.div
-                initial={{ scale: 0, opacity: 1 }}
-                animate={{ scale: 80, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ 
-                  duration: 0.4,
-                  ease: "easeInOut"
-                }}
-                className="w-10 h-10 bg-black rounded-full origin-center"
-              />
-            )}
-
-            {gameState.transitionType === 'flash' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.1 }}
-                className="absolute inset-0 bg-white"
-              />
-            )}
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 
@@ -536,6 +505,31 @@ export default function GameCanvas() {
         onDismiss={handleDismissNotification}
         pokemonSheet={npcImages?.['_sheets']?.[POKEMON_SPRITE_SHEET]}
       />
+
+      {/* Battle View Overlay */}
+      <AnimatePresence>
+        {gameState.menuState === 'BATTLE' && gameState.battleOpponent && (
+            <BattleView 
+                opponent={gameState.battleOpponent}
+                gameState={gameState}
+                setGameState={setGameState}
+                overlayMode={overlayMode}
+                pokemonSheet={npcImages?.['_sheets']?.[POKEMON_SPRITE_SHEET]}
+                playerImage={playerImages?.['down_0']}
+                battleImages={battleImages}
+                itemImages={itemImages}
+            />
+        )}
+      </AnimatePresence>
+
+      {/* None Mode UI - D-Pad & A/B Buttons */}
+      {overlayMode === 'none' && (
+        <NoOverlay 
+          gameState={gameState}
+          handleArrowDown={handleArrowDown}
+          handleArrowUp={handleArrowUp}
+        />
+      )}
 
       {/* Mode Toggle Overlay - Always Visible */}
       <div className="fixed top-4 md:top-8 left-1/2 -translate-x-1/2 flex gap-1 z-[100] pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 p-1 rounded-md md:p-1.5 md:rounded-full shadow-2xl">
@@ -579,6 +573,46 @@ export default function GameCanvas() {
           </button>
       </div>
 
+      {/* Map Transition Fade Overlay - Root level to cover everything including BattleView */}
+      <AnimatePresence>
+        {gameState.isTransitioning && (
+          <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center">
+            {gameState.transitionType === 'fade' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 bg-black"
+              />
+            )}
+            
+            {gameState.transitionType === 'circle' && (
+              <motion.div
+                initial={{ scale: 0, opacity: 1 }}
+                animate={{ scale: 80, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ 
+                  duration: 0.4,
+                  ease: "easeInOut"
+                }}
+                className="w-10 h-10 bg-black rounded-full origin-center"
+              />
+            )}
+
+            {gameState.transitionType === 'flash' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.1 }}
+                className="absolute inset-0 backdrop-invert"
+              />
+            )}
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait" onExitComplete={() => setDisplayedOverlayMode(overlayMode)}>
         {overlayMode === 'none' && (
           <motion.div 
@@ -591,11 +625,6 @@ export default function GameCanvas() {
             className="fixed inset-0 bg-black z-0"
           >
             {renderCanvas()}
-            <NoOverlay 
-              gameState={gameState}
-              handleArrowDown={handleArrowDown}
-              handleArrowUp={handleArrowUp}
-            />
           </motion.div>
         )}
 

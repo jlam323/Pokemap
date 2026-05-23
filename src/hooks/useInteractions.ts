@@ -1,5 +1,5 @@
 import { useCallback, Dispatch, SetStateAction, MutableRefObject } from 'react';
-import { GameState, Entity, Item, Direction, NPCType, ActionTrigger } from '../types';
+import { GameState, Entity, Item, Direction, NPCType, ActionTrigger, EntityType } from '../types';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import { ITEM_SPRITE_CONFIGS } from '../data/items';
 
@@ -179,6 +179,66 @@ export function useInteractions({
     if (nearbyNPCIndex !== -1) {
       const nearbyNPC = npcsRef.current[nearbyNPCIndex];
       let newDir: Direction = nearbyNPC.dir;
+      if (nearbyNPC.type === EntityType.POKEMON) {
+        if (nearbyNPC.isActionActive) {
+          return; // Do not start battle while currently undergoing capture animation
+        }
+        if (!stateRef.current.activePartnerId) {
+          // Trigger default dialogue or behavior if no partner
+          const dialogueGroups = [["I should choose a partner in my Pokédex first!"]];
+          setGameState(prev => ({
+            ...prev,
+            isTalking: true,
+            activeDialogue: dialogueGroups[0],
+            dialogueIndex: 0,
+            talkingNPCId: nearbyNPC.id,
+            hasInteractedWithNPC: true
+          }));
+          return;
+        }
+
+        // Battle Start Transition: Triple Flash and Circle Reveal
+        const triggerSequence = async () => {
+          // Slow dramatic flashes
+          for (let i = 0; i < 3; i++) {
+            setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'flash' }));
+            await new Promise(r => setTimeout(r, 150));
+            setGameState(prev => ({ ...prev, isTransitioning: false }));
+            await new Promise(r => setTimeout(r, 150));
+          }
+          
+          // 1. Iris Close: Grow circle to cover the map
+          setGameState(prev => ({
+            ...prev,
+            isTransitioning: true,
+            transitionType: 'circle'
+          }));
+
+          // Wait for circle to fully cover screen (duration is 0.4s in GameCanvas)
+          await new Promise(r => setTimeout(r, 500)); 
+
+          // 2. While screen is black, switch to Battle View
+          setGameState(prev => ({
+            ...prev,
+            menuState: 'BATTLE',
+            battleOpponent: nearbyNPC,
+            hasInteractedWithNPC: true,
+          }));
+
+          // Small extra buffer on black
+          await new Promise(r => setTimeout(r, 200));
+
+          // 3. Iris Open: Reveal Battle View by ending transition (exit animation triggers)
+          setGameState(prev => ({
+            ...prev,
+            isTransitioning: false
+          }));
+        };
+
+        triggerSequence();
+        return;
+      }
+
       if (nearbyNPC.npcType !== NPCType.SHOPKEEPER) {
         const dx = player.pos.x - nearbyNPC.pos.x;
         const dy = player.pos.y - nearbyNPC.pos.y;

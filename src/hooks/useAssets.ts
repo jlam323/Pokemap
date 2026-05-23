@@ -29,6 +29,7 @@ export function useAssets() {
   const itemImagesRef = useRef<Record<string, Record<string, HTMLImageElement>>>({});
   const mapsImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const dialogueImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const battleImagesRef = useRef<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
     let imagesToLoad = 0;
@@ -131,6 +132,26 @@ export function useAssets() {
       };
     });
 
+    // Battle Assets
+    [
+      'water-battlebase', 
+      'grass-battlebase', 
+      'water-player-battlebase', 
+      'grass-player-battlebase'
+    ].forEach(asset => {
+      imagesToLoad++;
+      const bImg = new Image();
+      bImg.src = `${base}/battle/${asset}.png`;
+      bImg.onload = () => {
+        battleImagesRef.current[asset] = bImg;
+        checkAllLoaded();
+      };
+      bImg.onerror = () => {
+        console.warn(`Battle asset failed to load: ${asset}`);
+        checkAllLoaded();
+      };
+    });
+
     // Sprite Sheets
     [POKEMON_SPRITE_SHEET].forEach(sheet => {
       imagesToLoad++;
@@ -158,6 +179,7 @@ export function useAssets() {
     npcImages: npcImagesRef.current,
     itemImages: itemImagesRef.current,
     mapImages: mapsImagesRef.current,
-    dialogueImages: dialogueImagesRef.current
+    dialogueImages: dialogueImagesRef.current,
+    battleImages: battleImagesRef.current
   };
 }

@@ -182,6 +182,13 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet
           <PokedexView 
             caughtIds={gameState.caughtPokemonIds} 
             viewedIds={gameState.viewedPokemonIds}
+            activePartnerId={gameState.activePartnerId}
+            onSetPartner={(id) => {
+              setGameState(prev => ({
+                ...prev,
+                activePartnerId: prev.activePartnerId === id ? null : id
+              }));
+            }}
             onView={(id) => {
               if (!gameState.viewedPokemonIds.includes(id)) {
                 setGameState(prev => ({

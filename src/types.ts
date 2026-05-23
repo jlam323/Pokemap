@@ -211,7 +211,7 @@ export interface CatchNotification {
   pokedexNumber: string;
 }
 
-export type MenuState = 'CLOSED' | 'MAIN' | 'POKEDEX' | 'INVENTORY' | 'DETAILS';
+export type MenuState = 'CLOSED' | 'MAIN' | 'POKEDEX' | 'INVENTORY' | 'DETAILS' | 'BATTLE';
 
 export interface GameState {
   player: Entity;
@@ -230,6 +230,8 @@ export interface GameState {
   viewedPokemonIds: string[]; // Track which caught pokemon have been viewed in the pokedex
   inventory: Record<string, number>; // Added: track items
   menuState: MenuState; // Added: track active menu
+  activePartnerId: string | null; // Added: track current battle partner
+  battleOpponent: Entity | null; // Added: track current battle opponent
   isTransitioning: boolean;
   transitionType: 'fade' | 'flash' | 'circle';
   pokeballs: Pokeball[];

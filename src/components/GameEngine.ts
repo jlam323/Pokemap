@@ -25,9 +25,13 @@ export function GameEngine() {
     initCollisionMap
   } = useCollisionSystem();
 
+  // Keep game loop refs and collision map in sync with React state changes
   useEffect(() => {
+    playerRef.current = gameState.player;
+    npcsRef.current = gameState.npcs;
+    itemsRef.current = gameState.items;
     initCollisionMap(gameState.player, gameState.npcs, gameState.items);
-  }, []);
+  }, [gameState.npcs, gameState.items, gameState.player, initCollisionMap]);
 
   const currentMap = ALL_MAPS.find(m => m.id === gameState.currentMapId) || ALL_MAPS[0];
 

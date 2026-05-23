@@ -8,11 +8,13 @@ interface PokedexViewProps {
   viewedIds: string[];
   onView: (id: string) => void;
   onBack: () => void;
+  activePartnerId: string | null;
+  onSetPartner: (id: string) => void;
   overlayMode: 'none' | 'gbc' | 'gba';
   pokemonSheet?: HTMLImageElement;
 }
 
-export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, overlayMode, pokemonSheet }: PokedexViewProps) => {
+export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, activePartnerId, onSetPartner, overlayMode, pokemonSheet }: PokedexViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [itemsPerRow, setItemsPerRow] = useState(6);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -45,6 +47,9 @@ export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, ov
 
   const imgSize = pokemonSheet ? { w: pokemonSheet.naturalWidth, h: pokemonSheet.naturalHeight } : null;
 
+  const selectedPokemon = POKEMON_NPC_BASES[selectedIndex];
+  const isCaught = (caughtIds || []).includes(selectedPokemon.spriteName);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
@@ -67,17 +72,14 @@ export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, ov
         setSelectedIndex(prev => Math.max(prev - itemsPerRow, 0));
       } else if (isBackKey) {
         onBack();
-      } else if (isSelectionKey) {
-        // Handle selection if needed
-        console.log('Selected:', selectedPokemon.name);
+      } else if ((isSelectionKey || key === ' ') && isCaught) {
+        onSetPartner(selectedPokemon.spriteName);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [itemsPerRow]);
-
-  const selectedPokemon = POKEMON_NPC_BASES[selectedIndex];
+  }, [itemsPerRow, selectedIndex, caughtIds, activePartnerId, onSetPartner, onBack, selectedPokemon, isCaught]);
 
   useEffect(() => {
     if (selectedPokemon && caughtIds.includes(selectedPokemon.spriteName)) {
@@ -102,8 +104,6 @@ export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, ov
       </div>
     );
   }
-
-  const isCaught = (caughtIds || []).includes(selectedPokemon.spriteName);
 
   // Helper to get responsive font sizes based on overlay mode
   const getFontSize = (baseSize: string, largeSize: string) => {
@@ -206,6 +206,12 @@ export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, ov
                 {caught && !viewedIds.includes(pokemon.spriteName) && (
                   <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 border border-black transform translate-x-1/2 -translate-y-1/2 rotate-45 z-20" />
                 )}
+                
+                {activePartnerId === pokemon.spriteName && (
+                  <div className="absolute top-0 left-0 bg-yellow-400 border-r border-b border-black px-1 py-0.5 text-[5px] font-black z-20 leading-none">
+                    PARTNER
+                  </div>
+                )}
               </div>
             );
           })}
@@ -214,35 +220,50 @@ export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, ov
 
       <div className="p-1.5 md:p-2 bg-white border-t-4 border-black shrink-0">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className={`w-10 h-10 md:w-14 md:h-14 border-2 border-black flex items-center justify-center shrink-0 ${isCaught ? 'bg-white' : 'bg-black/5'}`}>
-            <div className="w-[90%] h-[90%]">
-              {imgSize && (
-                <div style={getSpriteStyle(selectedPokemon.spriteSheet.index, isCaught)} />
-              )}
-            </div>
-          </div>
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <span className={`font-black tracking-[2px] ${getFontSize('text-[12px]', 'text-[15px]')}`}>{isCaught ? selectedPokemon.name : `??? (No. ${(selectedIndex + 1).toString().padStart(3,'0')})`}</span>
-              {isCaught && selectedPokemon.battleTypes && selectedPokemon.battleTypes.length > 0 && (
-                <div className="flex gap-1 mt-0.5">
-                  {selectedPokemon.battleTypes.map(type => (
-                    <span 
-                      key={type} 
-                      className={`${TYPE_COLORS[type] || 'bg-gray-400'} text-white text-[5px] md:text-[8px] px-2 py-0.5 rounded font-black tracking-[1px] uppercase border border-black/20 shadow-sm`}
-                    >
-                      {type}
-                    </span>
-                  ))}
+            <div className="flex items-center gap-2 md:gap-3 mb-1">
+              <div className={`w-10 h-10 md:w-14 md:h-14 border-2 border-black flex items-center justify-center shrink-0 ${isCaught ? 'bg-white' : 'bg-black/5'}`}>
+                <div className="w-[90%] h-[90%]">
+                  {imgSize && (
+                    <div style={getSpriteStyle(selectedPokemon.spriteSheet.index, isCaught)} />
+                  )}
                 </div>
-              )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className={`font-black tracking-[2px] ${getFontSize('text-[12px]', 'text-[15px]')}`}>{isCaught ? selectedPokemon.name : `??? (No. ${(selectedIndex + 1).toString().padStart(3,'0')})`}</span>
+                  {isCaught && selectedPokemon.battleTypes && selectedPokemon.battleTypes.length > 0 && (
+                    <div className="flex gap-1 mt-0.5">
+                      {selectedPokemon.battleTypes.map(type => (
+                        <span 
+                          key={type} 
+                          className={`${TYPE_COLORS[type] || 'bg-gray-400'} text-white text-[5px] md:text-[8px] px-2 py-0.5 rounded font-black tracking-[1px] uppercase border border-black/20 shadow-sm`}
+                        >
+                          {type}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className={`font-bold text-black/50 tracking-[1px] mt-0.5 leading-tight ${getFontSize('text-[9px]', 'text-[13px]')}`}>
+                  {isCaught ? 'THIS POKÉMON HAS BEEN SUCCESSFULLY CAPTURED AND DOCUMENTED.' : 'NOT MUCH IS KNOWN ABOUT THIS POKÉMON YET.'}
+                </p>
+              </div>
             </div>
-            <p className={`font-bold text-black/50 tracking-[1px] mt-0.5 leading-tight ${getFontSize('text-[9px]', 'text-[13px]')}`}>
-              {isCaught ? 'THIS POKÉMON HAS BEEN SUCCESSFULLY CAPTURED AND DOCUMENTED.' : 'NOT MUCH IS KNOWN ABOUT THIS POKÉMON YET.'}
-            </p>
+            
+            {isCaught && activePartnerId !== selectedPokemon.spriteName && (
+              <div className="flex gap-2 mt-1">
+                <button 
+                  onClick={() => onSetPartner(selectedPokemon.spriteName)}
+                  className="flex-1 border-2 border-black py-0.5 px-2 text-[8px] md:text-[9px] font-black transition-all active:scale-95 bg-black text-white hover:bg-black/80"
+                >
+                  [A] SET AS PARTNER
+                </button>
+              </div>
+            )}
           </div>
         </div>
-        <div className="mt-0.5 md:mt-1 flex justify-end">
+        <div className="mt-0.5 md:mt-1 flex justify-end items-center">
             <span className={`font-black tracking-[2px] text-black/30 ${getFontSize('text-[8px]', 'text-[11px]')}`}>[B] TO BACK</span>
         </div>
       </div>

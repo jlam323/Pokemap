@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, MutableRefObject } from 'react';
 import { GameState, Pokeball, EntityType, Entity, Item } from '../types';
-import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, BALL_TYPES, TILE_SIZE } from '../constants';
+import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, BALL_TYPES, TILE_SIZE, FAILURE_PHRASES } from '../constants';
 import { POKEMON_NPC_BASES } from '../data/pokemon';
 import { isAtPos } from '../lib/gameUtils';
 
@@ -17,12 +17,6 @@ interface usePokeballsProps {
   itemsRef: MutableRefObject<Item[]>;
   initCollisionMap: (player: Entity, npcs: Entity[], items: Item[]) => void;
 }
-
-const FAILURE_PHRASES = [
-  "Oh no! The Pokémon broke free!",
-  "Aww! It appeared to be caught!",
-  "Shoot! It was so close, too!"
-];
 
 /**
  * Hook to manage throwing and tracking pokeballs.
@@ -135,6 +129,7 @@ export function usePokeballs({
             setGameState(prev => {
               const newCaught = [...prev.caughtPokemonIds];
               const newNotifications = [...prev.catchNotifications];
+              let newPartnerId = prev.activePartnerId;
 
               if (pokemonSprite && !newCaught.includes(pokemonSprite)) {
                 newCaught.push(pokemonSprite);
@@ -146,11 +141,17 @@ export function usePokeballs({
                 });
               }
 
+              // Automatically set first captured pokemon as partner if none set
+              if (!newPartnerId && pokemonSprite) {
+                newPartnerId = pokemonSprite;
+              }
+
               return {
                 ...prev,
                 npcs: prev.npcs.filter(n => n.id !== ball.hitEntityId),
                 caughtPokemonIds: newCaught,
                 catchNotifications: newNotifications,
+                activePartnerId: newPartnerId,
                 floatingMessages: [
                   ...prev.floatingMessages,
                   {

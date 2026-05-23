@@ -19,6 +19,7 @@ export function createInitialGameState(): GameState {
   let viewedPokemonIds: string[] = [];
   let inventory: Record<string, number> = {};
   let collectedItemIds: string[] = [];
+  let activePartnerId: string | null = null;
 
   try {
     const savedPokedex = localStorage.getItem('pokedex_progress');
@@ -39,6 +40,11 @@ export function createInitialGameState(): GameState {
     const savedCollectedItems = localStorage.getItem('collected_items_progress');
     if (savedCollectedItems) {
       collectedItemIds = JSON.parse(savedCollectedItems);
+    }
+
+    const savedPartner = localStorage.getItem('active_partner_id');
+    if (savedPartner) {
+      activePartnerId = savedPartner;
     }
   } catch (e) {
     console.warn('Failed to load progress', e);
@@ -63,6 +69,8 @@ export function createInitialGameState(): GameState {
     viewedPokemonIds,
     inventory,
     menuState: 'CLOSED',
+    activePartnerId,
+    battleOpponent: null,
     isTransitioning: false,
     transitionType: 'fade',
     pokeballs: [],
@@ -103,10 +111,15 @@ export function useGameState() {
       localStorage.setItem('viewed_pokemon_progress', JSON.stringify(gameState.viewedPokemonIds));
       localStorage.setItem('inventory_progress', JSON.stringify(gameState.inventory));
       localStorage.setItem('collected_items_progress', JSON.stringify(gameState.collectedItemIds));
+      if (gameState.activePartnerId) {
+        localStorage.setItem('active_partner_id', gameState.activePartnerId);
+      } else {
+        localStorage.removeItem('active_partner_id');
+      }
     } catch (e) {
       console.warn('Failed to save progress', e);
     }
-  }, [gameState.caughtPokemonIds, gameState.viewedPokemonIds, gameState.inventory, gameState.collectedItemIds]);
+  }, [gameState.caughtPokemonIds, gameState.viewedPokemonIds, gameState.activePartnerId, gameState.inventory, gameState.collectedItemIds]);
 
   return {
     gameState,

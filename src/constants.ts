@@ -11,6 +11,12 @@ export const DEFAULT_POKEMON_SCALE = 1.75;
 export const CATCH_SUCCESS_SEQUENCE = [1, 0, 8, 10, 2, 2, 8, 10, 2, 2, 11, 12, 12, 12];
 export const CATCH_FAILURE_SEQUENCE = [1, 0, 8, 10, 2, 3, 4, 5, 2, 3, 4, 5, 2, 5, 0, 1, 1];
 
+export const FAILURE_PHRASES = [
+  "Oh no! The Pokémon broke free!",
+  "Aww! It appeared to be caught!",
+  "Shoot! It was so close, too!"
+];
+
 export const BALL_TYPES = [
   'pokeball', 'greatball', 'ultraball', 'quickball', 'timerball', 
   'diveball', 'netball', 'luxuryball', 'specialball', 'premierball', 'masterball'
@@ -45,4 +51,24 @@ export const TYPE_COLORS: Record<string, string> = {
   Dragon: 'bg-[#7038F8]',
   Steel: 'bg-[#B8B8D0]',
   Fairy: 'bg-[#EE99AC]',
+};
+
+export const TYPE_MOVES: Record<string, string[]> = {
+  Normal: ['Tackle', 'Double-Edge', 'Hyper Beam'],
+  Fire: ['Fireblast', 'Flame Wheel', 'Flamethrower'],
+  Water: ['Water Gun', 'Bubble', 'Water Pulse'],
+  Electric: ['Thundershock', 'Thunder-Wave', 'Thunderbolt'],
+  Grass: ['Vine Whip', 'Razor Leaf', 'Leaf Blade'],
+  Ice: ['Ice Shard', 'Ice Beam', 'Powder Snow'],
+  Fighting: ['Close Combat', 'Low Kick', 'Brick Break'],
+  Poison: ['Toxic', 'Sludge', 'Sludge Bomb'],
+  Ground: ['Earthquake', 'Mud-Slap', 'Bone Rush'],
+  Flying: ['Aerial Ace', 'Fly', 'Air Slash'],
+  Psychic: ['Psychic', 'Psybeam', 'Confusion'],
+  Bug: ['Bug Bite', 'Silver Wind', 'X-Scissor'],
+  Rock: ['Rock Throw', 'Rock Tomb', 'Rock Slide'],
+  Ghost: ['Lick', 'Night Shade', 'Shadow Ball'],
+  Dragon: ['Outrage', 'Dragon Claw', 'Draco Meteor'],
+  Steel: ['Metal Claw', 'Iron Head', 'Flash Cannon'],
+  Fairy: ['Fairy Wind', 'Disarming Voice', 'Moonblast'],
 };
