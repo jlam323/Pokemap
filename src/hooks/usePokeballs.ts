@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useRef, MutableRefObject } from 'react';
-import { GameState, Pokeball, EntityType, Entity, Item } from '../types';
+import React, { useCallback, useRef, MutableRefObject } from 'react';
+import { Pokeball, Entity, Item } from '../types';
 import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, BALL_TYPES, TILE_SIZE, FAILURE_PHRASES } from '../constants';
 import { POKEMON_NPC_BASES } from '../data/pokemon';
 import { isAtPos } from '../lib/gameUtils';
+import { gameStore } from '../stores/GameStore';
 
 const MAX_DISTANCE = 10;
 const THROW_COOLDOWN = 500;
@@ -10,8 +11,6 @@ const FRAME_DURATION = 150;
 const CATCH_PROBABILITY = 0.7;
 
 interface usePokeballsProps {
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  stateRef: MutableRefObject<GameState>;
   playerRef: MutableRefObject<Entity>;
   npcsRef: MutableRefObject<Entity[]>;
   itemsRef: MutableRefObject<Item[]>;
@@ -22,8 +21,6 @@ interface usePokeballsProps {
  * Hook to manage throwing and tracking pokeballs.
  */
 export function usePokeballs({ 
-  setGameState,
-  stateRef,
   playerRef, 
   npcsRef, 
   itemsRef, 
@@ -37,7 +34,7 @@ export function usePokeballs({
     if (now - lastThrowTimeRef.current < THROW_COOLDOWN) return;
 
     const player = playerRef.current;
-    const currentState = stateRef.current;
+    const currentState = gameStore;
     if (currentState.menuState !== 'CLOSED') return; // Don't throw if menu is open
 
     // Pokeballs are now infinite
@@ -68,7 +65,7 @@ export function usePokeballs({
     playerRef.current.throwTimer = 300; // 300ms duration
     
     // Force a re-render
-    setGameState(prev => ({
+    gameStore.setGameState(prev => ({
       ...prev,
       player: {
         ...prev.player,
@@ -77,7 +74,7 @@ export function usePokeballs({
       },
       pokeballs: [...pokeballsRef.current]
     }));
-  }, [playerRef, setGameState, stateRef]);
+  }, [playerRef]);
 
   const updatePokeballs = useCallback((dt: number) => {
     if (pokeballsRef.current.length === 0) return;
@@ -93,7 +90,7 @@ export function usePokeballs({
           ball.vfxTriggered = true;
           const isSuccess = ball.captureType === 'success';
           
-          setGameState(prev => ({
+          gameStore.setGameState(prev => ({
             ...prev,
             vfx: [
               ...prev.vfx,
@@ -126,7 +123,7 @@ export function usePokeballs({
             initCollisionMap(playerRef.current, npcsRef.current, itemsRef.current);
 
             // Captured! Remove pokemon from state and add to caught list
-            setGameState(prev => {
+            gameStore.setGameState(prev => {
               const newCaught = [...prev.caughtPokemonIds];
               const newNotifications = [...prev.catchNotifications];
               let newPartnerId = prev.activePartnerId;
@@ -174,7 +171,7 @@ export function usePokeballs({
             initCollisionMap(playerRef.current, npcsRef.current, itemsRef.current);
 
             // Failed! Release pokemon in state
-            setGameState(prev => ({
+            gameStore.setGameState(prev => ({
               ...prev,
               npcs: prev.npcs.map(n => n.id === ball.hitEntityId ? { ...n, isActionActive: false } : n),
               floatingMessages: [
@@ -218,7 +215,7 @@ export function usePokeballs({
 
       // Check for collision with Pokemon NPCs
       const hitPokemon = npcsRef.current.find(npc => 
-        npc.type === EntityType.POKEMON && 
+        npc.type === 'pokemon' &&  // Changed EntityType.POKEMON to 'pokemon' string
         !npc.isActionActive &&
         !pokeballsRef.current.some(b => b.isCapturing && b.hitEntityId === npc.id) &&
         isAtPos(npc.pos, { x: gridX, y: gridY })
@@ -241,7 +238,7 @@ export function usePokeballs({
         npcsRef.current = npcsRef.current.map(n => n.id === hitPokemon.id ? { ...n, isActionActive: true } : n);
 
         // Hide pokemon while capturing in state
-        setGameState(prev => ({
+        gameStore.setGameState(prev => ({
           ...prev,
           npcs: prev.npcs.map(n => n.id === hitPokemon.id ? { ...n, isActionActive: true } : n)
         }));
@@ -254,12 +251,12 @@ export function usePokeballs({
 
     if (updatedBalls.length !== pokeballsRef.current.length || changed) {
       pokeballsRef.current = updatedBalls;
-      setGameState(prev => ({
+      gameStore.setGameState(prev => ({
         ...prev,
         pokeballs: [...updatedBalls]
       }));
     }
-  }, [setGameState, npcsRef, itemsRef, initCollisionMap, playerRef]);
+  }, [npcsRef, itemsRef, initCollisionMap, playerRef]);
 
   return {
     spawnPokeball,

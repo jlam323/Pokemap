@@ -38,8 +38,6 @@ export function GameEngine() {
   const {
     handleInteraction
   } = useInteractions({
-    setGameState,
-    stateRef,
     playerRef,
     npcsRef,
     itemsRef,
@@ -47,8 +45,6 @@ export function GameEngine() {
   });
 
   const { spawnPokeball, updatePokeballs, pokeballsRef } = usePokeballs({
-    setGameState,
-    stateRef,
     playerRef,
     npcsRef,
     itemsRef,
@@ -83,8 +79,6 @@ export function GameEngine() {
     isAutoSteppingRef,
     autoStepDirRef
   } = useMapSystem({
-    setGameState,
-    stateRef,
     playerRef,
     npcsRef,
     itemsRef,

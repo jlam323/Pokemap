@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { observer } from 'mobx-react-lite';
 import { INITIAL_ITEMS } from '../../data/items';
 
 interface InventoryViewProps {
@@ -8,7 +9,7 @@ interface InventoryViewProps {
   overlayMode: 'none' | 'gbc' | 'gba';
 }
 
-export const InventoryView = ({ inventory, onBack, overlayMode }: InventoryViewProps) => {
+export const InventoryView = observer(({ inventory, onBack, overlayMode }: InventoryViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   
   // Filter only items that are actually in inventory
@@ -110,4 +111,4 @@ export const InventoryView = ({ inventory, onBack, overlayMode }: InventoryViewP
       </div>
     </motion.div>
   );
-};
+});

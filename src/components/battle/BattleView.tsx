@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
+import { observer } from 'mobx-react-lite';
 import { Entity, GameState } from '../../types';
 import { POKEMON_NPC_BASES } from '../../data/pokemon';
 import { FAILURE_PHRASES, CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE } from '../../constants';
@@ -19,7 +20,7 @@ export interface BattleViewProps {
   itemImages: Record<string, Record<string, HTMLImageElement>>;
 }
 
-export const BattleView = ({
+export const BattleView = observer(({
   opponent,
   gameState,
   setGameState,
@@ -422,4 +423,4 @@ export const BattleView = ({
       </div>
     </motion.div>
   );
-};
+});

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
+import { observer } from 'mobx-react-lite';
 import { GameEngine } from './GameEngine';
 import { NoOverlay } from './overlays/NoOverlay';
 import { GBCOverlay } from './overlays/GBCOverlay';
@@ -16,7 +17,7 @@ import { EntityType } from '../types';
 import { NotificationBanner } from './ui/NotificationBanner';
 import { BattleView } from './battle/BattleView';
 
-export default function GameCanvas() {
+export default observer(function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -681,4 +682,4 @@ export default function GameCanvas() {
       </AnimatePresence>
     </div>
   );
-}
+});

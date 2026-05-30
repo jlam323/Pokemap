@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'motion/react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { observer } from 'mobx-react-lite';
 import { DialogueBox } from '../ui/DialogueBox';
 import { GameState, Direction } from '../../types';
 
@@ -10,7 +11,7 @@ interface NoOverlayProps {
   handleArrowUp: (dir: Direction) => void;
 }
 
-export function NoOverlay({ 
+export const NoOverlay = observer(function NoOverlay({ 
   gameState, 
   handleArrowDown, 
   handleArrowUp 
@@ -176,4 +177,4 @@ export function NoOverlay({
       </div>
     </div>
   );
-}
+});

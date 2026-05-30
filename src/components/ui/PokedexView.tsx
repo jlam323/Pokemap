@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
+import { observer } from 'mobx-react-lite';
 import { POKEMON_NPC_BASES } from '../../data/pokemon';
 import { TYPE_COLORS } from '../../constants';
 
@@ -14,7 +15,7 @@ interface PokedexViewProps {
   pokemonSheet?: HTMLImageElement;
 }
 
-export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, activePartnerId, onSetPartner, overlayMode, pokemonSheet }: PokedexViewProps) => {
+export const PokedexView = observer(({ caughtIds = [], viewedIds = [], onView, onBack, activePartnerId, onSetPartner, overlayMode, pokemonSheet }: PokedexViewProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [itemsPerRow, setItemsPerRow] = useState(6);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -269,4 +270,4 @@ export const PokedexView = ({ caughtIds = [], viewedIds = [], onView, onBack, ac
       </div>
     </motion.div>
   );
-};
+});

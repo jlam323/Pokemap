@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowBigUp, ArrowBigDown, ArrowBigLeft, ArrowBigRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { observer } from 'mobx-react-lite';
 import { DialogueBox } from '../ui/DialogueBox';
 import { GameState } from '../../types';
 
@@ -11,7 +12,7 @@ interface GBAOverlayProps {
 }
 
 // GAMEBOY ADVANCE OVERLAY
-export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps) => {
+export const GBAOverlay = observer(({ children, gameState, keysPressed }: GBAOverlayProps) => {
   const containerVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.95 },
     show: {
@@ -346,4 +347,4 @@ export const GBAOverlay = ({ children, gameState, keysPressed }: GBAOverlayProps
       </motion.div>
     </motion.div>
   );
-};
+});

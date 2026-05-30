@@ -1,11 +1,10 @@
-import { useCallback, Dispatch, SetStateAction, MutableRefObject } from 'react';
-import { GameState, Entity, Item, Direction, NPCType, ActionTrigger, EntityType } from '../types';
+import { useCallback, MutableRefObject } from 'react';
+import { Entity, Item, Direction, NPCType, ActionTrigger, EntityType } from '../types';
 import { findNearbyNPC, findNearbyItem } from '../lib/gameUtils';
 import { ITEM_SPRITE_CONFIGS } from '../data/items';
+import { gameStore } from '../stores/GameStore';
 
 interface InteractionProps {
-  setGameState: Dispatch<SetStateAction<GameState>>;
-  stateRef: MutableRefObject<GameState>;
   playerRef: MutableRefObject<Entity>;
   npcsRef: MutableRefObject<Entity[]>;
   itemsRef: MutableRefObject<Item[]>;
@@ -25,8 +24,6 @@ interface InteractionProps {
  * @returns {Object} Interaction triggers and advancement functions.
  */
 export function useInteractions({
-  setGameState,
-  stateRef,
   playerRef,
   npcsRef,
   itemsRef,
@@ -39,7 +36,7 @@ export function useInteractions({
    * @param npcId - ID of the NPC to animate
    */
   const triggerNPCAction = useCallback((npcId: string) => {
-    setGameState(prev => {
+    gameStore.setGameState(prev => {
       const npcIndex = prev.npcs.findIndex(n => n.id === npcId);
       if (npcIndex === -1) return prev;
 
@@ -51,7 +48,7 @@ export function useInteractions({
       }
 
       setTimeout(() => {
-        setGameState(s => {
+        gameStore.setGameState(s => {
           const updatedNpcs = [...s.npcs];
           const idx = updatedNpcs.findIndex(n => n.id === npcId);
           if (idx !== -1) {
@@ -67,10 +64,10 @@ export function useInteractions({
 
       return { ...prev, npcs: newNpcs };
     });
-  }, [setGameState, npcsRef]);
+  }, [npcsRef]);
 
   const triggerItemAction = useCallback((itemId: string) => {
-    const currentState = stateRef.current;
+    const currentState = gameStore;
     const itemIdx = currentState.items.findIndex(i => i.id === itemId);
     if (itemIdx === -1) return;
     
@@ -84,7 +81,7 @@ export function useInteractions({
     const playNextFrame = () => {
       if (currentIdx >= sequence.length) return;
       
-      setGameState(prev => {
+      gameStore.setGameState(prev => {
         const idx = prev.items.findIndex(i => i.id === itemId);
         if (idx === -1) return prev;
         
@@ -111,10 +108,10 @@ export function useInteractions({
     };
 
     playNextFrame();
-  }, [setGameState, stateRef, itemsRef]);
+  }, [itemsRef]);
 
   const nextDialogue = useCallback(() => {
-    setGameState(prev => {
+    gameStore.setGameState(prev => {
       if (!prev.activeDialogue) return prev;
       if (prev.dialogueIndex < prev.activeDialogue.length - 1) {
         return { ...prev, dialogueIndex: prev.dialogueIndex + 1 };
@@ -159,10 +156,10 @@ export function useInteractions({
         return { ...prev, isTalking: false, talkingNPCId: null, activeDialogue: null, dialogueIndex: 0, hasInteractedWithNPC: true };
       }
     });
-  }, [initCollisionMap, triggerNPCAction, playerRef, npcsRef, itemsRef, setGameState]);
+  }, [initCollisionMap, triggerNPCAction, playerRef, npcsRef, itemsRef]);
 
   const handleInteraction = useCallback(() => {
-    const currentState = stateRef.current;
+    const currentState = gameStore;
     if (currentState.menuState !== 'CLOSED') return;
     
     if (currentState.isTalking) {
@@ -183,10 +180,10 @@ export function useInteractions({
         if (nearbyNPC.isActionActive) {
           return; // Do not start battle while currently undergoing capture animation
         }
-        if (!stateRef.current.activePartnerId) {
+        if (!gameStore.activePartnerId) {
           // Trigger default dialogue or behavior if no partner
           const dialogueGroups = [["I should choose a partner in my Pokédex first!"]];
-          setGameState(prev => ({
+          gameStore.setGameState(prev => ({
             ...prev,
             isTalking: true,
             activeDialogue: dialogueGroups[0],
@@ -201,14 +198,14 @@ export function useInteractions({
         const triggerSequence = async () => {
           // Slow dramatic flashes
           for (let i = 0; i < 3; i++) {
-            setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'flash' }));
+            gameStore.setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'flash' }));
             await new Promise(r => setTimeout(r, 150));
-            setGameState(prev => ({ ...prev, isTransitioning: false }));
+            gameStore.setGameState(prev => ({ ...prev, isTransitioning: false }));
             await new Promise(r => setTimeout(r, 150));
           }
           
           // 1. Iris Close: Grow circle to cover the map
-          setGameState(prev => ({
+          gameStore.setGameState(prev => ({
             ...prev,
             isTransitioning: true,
             transitionType: 'circle'
@@ -218,7 +215,7 @@ export function useInteractions({
           await new Promise(r => setTimeout(r, 500)); 
 
           // 2. While screen is black, switch to Battle View
-          setGameState(prev => ({
+          gameStore.setGameState(prev => ({
             ...prev,
             menuState: 'BATTLE',
             battleOpponent: nearbyNPC,
@@ -229,7 +226,7 @@ export function useInteractions({
           await new Promise(r => setTimeout(r, 200));
 
           // 3. Iris Open: Reveal Battle View by ending transition (exit animation triggers)
-          setGameState(prev => ({
+          gameStore.setGameState(prev => ({
             ...prev,
             isTransitioning: false
           }));
@@ -258,7 +255,7 @@ export function useInteractions({
         triggerNPCAction(nearbyNPC.id);
       }
 
-      setGameState(prev => {
+      gameStore.setGameState(prev => {
         const newNpcs = [...prev.npcs];
         newNpcs[nearbyNPCIndex] = { 
           ...newNpcs[nearbyNPCIndex], 
@@ -285,7 +282,7 @@ export function useInteractions({
         const item = itemsRef.current[nearbyItemIndex];
         triggerItemAction(item.id);
 
-        setGameState(prev => ({
+        gameStore.setGameState(prev => ({
           ...prev,
           isTalking: true,
           talkingItemId: item.id,
@@ -295,7 +292,7 @@ export function useInteractions({
         }));
       }
     }
-  }, [nextDialogue, triggerItemAction, triggerNPCAction, playerRef, npcsRef, itemsRef, setGameState, stateRef]);
+  }, [nextDialogue, triggerItemAction, triggerNPCAction, playerRef, npcsRef, itemsRef]);
 
   return {
     handleInteraction,

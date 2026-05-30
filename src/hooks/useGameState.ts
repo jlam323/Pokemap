@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { GameState, Entity, Item, Position } from '../types';
+import { gameStore } from '../stores/GameStore';
 import { INITIAL_PLAYER } from '../data/player';
 import { ALL_MAPS } from '../data/maps';
 
@@ -91,38 +92,25 @@ export function createInitialGameState(): GameState {
  * @returns {Object} State, state setter, and various entity/position refs.
  */
 export function useGameState() {
-  const [gameState, setGameState] = useState<GameState>(createInitialGameState);
-
-  const playerRef = useRef<Entity>(gameState.player);
-  const npcsRef = useRef<Entity[]>(gameState.npcs);
-  const itemsRef = useRef<Item[]>(gameState.items);
-  const stateRef = useRef<GameState>(gameState);
-  const startPosRef = useRef<Position>(gameState.player.pos);
-  const targetPosRef = useRef<Position>(gameState.player.pos);
+  const playerRef = useRef<Entity>(gameStore.player);
+  const npcsRef = useRef<Entity[]>(gameStore.npcs);
+  const itemsRef = useRef<Item[]>(gameStore.items);
+  const stateRef = useRef<GameState>(gameStore as unknown as GameState);
+  const startPosRef = useRef<Position>(gameStore.player.pos);
+  const targetPosRef = useRef<Position>(gameStore.player.pos);
 
   useEffect(() => {
-    stateRef.current = gameState;
-  }, [gameState]);
+    playerRef.current = gameStore.player;
+    npcsRef.current = gameStore.npcs;
+    itemsRef.current = gameStore.items;
+  }, [gameStore.player, gameStore.npcs, gameStore.items]);
 
-  // Separate effect for persistence
-  useEffect(() => {
-    try {
-      localStorage.setItem('pokedex_progress', JSON.stringify(gameState.caughtPokemonIds));
-      localStorage.setItem('viewed_pokemon_progress', JSON.stringify(gameState.viewedPokemonIds));
-      localStorage.setItem('inventory_progress', JSON.stringify(gameState.inventory));
-      localStorage.setItem('collected_items_progress', JSON.stringify(gameState.collectedItemIds));
-      if (gameState.activePartnerId) {
-        localStorage.setItem('active_partner_id', gameState.activePartnerId);
-      } else {
-        localStorage.removeItem('active_partner_id');
-      }
-    } catch (e) {
-      console.warn('Failed to save progress', e);
-    }
-  }, [gameState.caughtPokemonIds, gameState.viewedPokemonIds, gameState.activePartnerId, gameState.inventory, gameState.collectedItemIds]);
+  const setGameState = (updater: any) => {
+    gameStore.setGameState(updater);
+  };
 
   return {
-    gameState,
+    gameState: gameStore as unknown as GameState,
     setGameState,
     playerRef,
     npcsRef,

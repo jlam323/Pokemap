@@ -1,13 +1,12 @@
-import { useCallback, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
-import { Position, Entity, Item, GameState, TileType, Direction } from '../types';
+import { useCallback, useRef, MutableRefObject } from 'react';
+import { Position, Entity, Item, Direction, TileType } from '../types';
 import { TILE_SIZE, MOVE_DURATION } from '../constants';
 import { ALL_MAPS } from '../data/maps';
 import { TILE_GRIDS } from '../lib/gameLogic';
 import { prepareMapData } from '../lib/mapLogic';
+import { gameStore } from '../stores/GameStore';
 
 interface MapSystemProps {
-  setGameState: Dispatch<SetStateAction<GameState>>;
-  stateRef: MutableRefObject<GameState>;
   playerRef: MutableRefObject<Entity>;
   npcsRef: MutableRefObject<Entity[]>;
   itemsRef: MutableRefObject<Item[]>;
@@ -29,8 +28,6 @@ interface MapSystemProps {
  * @returns {Object} changeMap function and auto-stepping control refs.
  */
 export function useMapSystem({
-  setGameState,
-  stateRef,
   playerRef,
   npcsRef,
   itemsRef,
@@ -50,7 +47,7 @@ export function useMapSystem({
    * @returns {boolean} True if an entry step was triggered
    */
   const triggerEntryStep = (mapId: number, spawnPos: Position) => {
-    if (stateRef.current.currentMapId !== mapId) return false;
+    if (gameStore.currentMapId !== mapId) return false;
 
     const currentMapData = ALL_MAPS.find(m => m.id === mapId);
     if (!currentMapData) return false;
@@ -86,7 +83,7 @@ export function useMapSystem({
    * @param targetPos - The pixel position to move the player to.
    */
   const teleportPlayer = useCallback((targetPos: Position) => {
-    setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'circle' }));
+    gameStore.setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'circle' }));
 
     setTimeout(() => {
         const newPlayer = {
@@ -99,7 +96,7 @@ export function useMapSystem({
         playerRef.current = newPlayer;
         initCollisionMap(newPlayer, npcsRef.current, itemsRef.current);
 
-        setGameState(prev => ({
+        gameStore.setGameState(prev => ({
           ...prev,
           player: newPlayer,
           isTalking: false,
@@ -113,9 +110,9 @@ export function useMapSystem({
         targetPosRef.current = { ...targetPos };
 
         setTimeout(() => {
-            setGameState(prev => ({ ...prev, isTransitioning: false }));
+            gameStore.setGameState(prev => ({ ...prev, isTransitioning: false }));
 
-            const triggered = triggerEntryStep(stateRef.current.currentMapId, targetPos);
+            const triggered = triggerEntryStep(gameStore.currentMapId, targetPos);
             if (triggered) {
                 setTimeout(() => {
                     isAutoSteppingRef.current = false;
@@ -123,21 +120,21 @@ export function useMapSystem({
             }
         }, 200);
     }, 400);
-  }, [setGameState, playerRef, npcsRef, itemsRef, initCollisionMap, startPosRef, targetPosRef, stateRef]);
+  }, [playerRef, npcsRef, itemsRef, initCollisionMap, startPosRef, targetPosRef]);
 
   const changeMap = useCallback((mapId: number, spawnPos?: Position, skipEntryAnimation: boolean = false) => {
     const targetMap = ALL_MAPS.find(m => m.id === mapId);
     if (!targetMap) return;
 
-    setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'fade' }));
+    gameStore.setGameState(prev => ({ ...prev, isTransitioning: true, transitionType: 'fade' }));
 
     setTimeout(() => {
         const { npcs, items, playerPos: newPlayerPos } = prepareMapData(
           mapId, 
-          stateRef.current.collectedItemIds, 
+          gameStore.collectedItemIds, 
           playerRef.current, 
           spawnPos, 
-          stateRef.current.mapReturnPositions
+          gameStore.mapReturnPositions
         );
 
         const newPlayer = {
@@ -152,7 +149,7 @@ export function useMapSystem({
         itemsRef.current = items;
         initCollisionMap(newPlayer, npcs, items);
 
-        setGameState(prev => ({
+        gameStore.setGameState(prev => ({
           ...prev,
           player: newPlayer,
           npcs: npcs,
@@ -174,7 +171,7 @@ export function useMapSystem({
         targetPosRef.current = newPlayerPos;
 
         setTimeout(() => {
-            setGameState(prev => ({ ...prev, isTransitioning: false }));
+            gameStore.setGameState(prev => ({ ...prev, isTransitioning: false }));
 
             if (!skipEntryAnimation) {
               const triggered = triggerEntryStep(mapId, newPlayerPos);
@@ -186,7 +183,7 @@ export function useMapSystem({
             }
         }, 200);
     }, 400);
-  }, [initCollisionMap, setGameState, stateRef, playerRef, npcsRef, itemsRef, startPosRef, targetPosRef]);
+  }, [initCollisionMap, playerRef, npcsRef, itemsRef, startPosRef, targetPosRef]);
 
   return {
     changeMap,

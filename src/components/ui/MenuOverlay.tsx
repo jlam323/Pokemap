@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { observer } from 'mobx-react-lite';
 import { GameState, MenuState } from '../../types';
 import { PokedexView } from './PokedexView';
 import { InventoryView } from './InventoryView';
@@ -11,7 +12,7 @@ interface MenuOverlayProps {
   pokemonSheet?: HTMLImageElement;
 }
 
-export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet }: MenuOverlayProps) => {
+export const MenuOverlay = observer(({ gameState, setGameState, overlayMode, pokemonSheet }: MenuOverlayProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [resetSelectedIndex, setResetSelectedIndex] = useState(0);
@@ -213,4 +214,4 @@ export const MenuOverlay = ({ gameState, setGameState, overlayMode, pokemonSheet
       </div>
     </div>
   );
-};
+});
