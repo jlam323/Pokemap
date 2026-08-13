@@ -3,6 +3,7 @@ import { GameState, Entity, Direction, Position, Habitat, TileType, EntityType, 
 import { TILE_SIZE, MOVE_DURATION, BUMP_DURATION, BUMP_DISTANCE } from '../constants';
 import { ALL_MAPS } from '../data/maps';
 import { TILE_GRIDS } from '../lib/gameLogic';
+import { toGridPos, toGridKey } from '../lib/gameUtils';
 
 interface EntityUpdateProps {
   stateRef: MutableRefObject<GameState>;
@@ -73,9 +74,11 @@ export function useEntityUpdates({
 				npc.pos.y = npc.startPos!.y + (npc.targetPos!.y - npc.startPos!.y) * progress;
 				
 				if (progress >= 1) {
-					collisionMapRef.current.delete(`${npc.startPos!.x},${npc.startPos!.y}`);
+					collisionMapRef.current.delete(toGridKey(npc.startPos!));
 					npc.isMoving = false;
 					npc.pos = { ...npc.targetPos! };
+					npc.startPos = undefined;
+					npc.targetPos = undefined;
 					npc.walkFrame = 0;
 					npc.moveProgress = 0;
 				} else {
@@ -134,15 +137,19 @@ export function useEntityUpdates({
 								}
 
 								if (habitatOk) {
-								const isOccupied = collisionMapRef.current.has(`${nextX},${nextY}`);
-								if (!isOccupied) {
-										collisionMapRef.current.add(`${nextX},${nextY}`);
+									const currentGrid = toGridPos(npc.pos);
+									const targetGrid = toGridPos({ x: nextX, y: nextY });
+
+									const isOccupied = collisionMapRef.current.has(toGridKey(targetGrid));
+									if (!isOccupied) {
+										collisionMapRef.current.add(toGridKey(targetGrid));
+										collisionMapRef.current.add(toGridKey(currentGrid));
 										npc.dir = dir;
 										npc.isMoving = true;
-										npc.startPos = { ...npc.pos };
-										npc.targetPos = { x: nextX, y: nextY };
+										npc.startPos = currentGrid;
+										npc.targetPos = targetGrid;
 										npc.moveProgress = 0;
-								}
+									}
 								}
 						}
 					}
@@ -204,9 +211,7 @@ export function useEntityUpdates({
       }
 
       if (progress >= 1) {
-        const oldX = startPosRef.current.x;
-        const oldY = startPosRef.current.y;
-        collisionMapRef.current.delete(`${oldX},${oldY}`);
+        collisionMapRef.current.delete(toGridKey(startPosRef.current));
 
         player.isMoving = false;
         player.isJumping = false;
@@ -339,10 +344,14 @@ export function useEntityUpdates({
           }
         }
 
-        const isOccupied = collisionMapRef.current.has(`${nextGridX},${nextGridY}`);
+        const targetGrid = toGridPos({ x: nextGridX, y: nextGridY });
+        const currentGrid = toGridPos(player.pos);
+
+        const isOccupied = collisionMapRef.current.has(toGridKey(targetGrid));
         
         if (canMove && !isOccupied) {
-          collisionMapRef.current.add(`${nextGridX},${nextGridY}`);
+          collisionMapRef.current.add(toGridKey(targetGrid));
+          collisionMapRef.current.add(toGridKey(currentGrid));
           bobTimerRef.current = 0;
           footCycleRef.current = footCycleRef.current === 1 ? 2 : 1;
           player.walkFrame = footCycleRef.current;
@@ -350,8 +359,8 @@ export function useEntityUpdates({
           player.isJumping = isJumping;
           player.isSurfing = enteringWater;
           moveTimerRef.current = 0;
-          startPosRef.current = { ...player.pos };
-          targetPosRef.current = { x: nextGridX, y: nextGridY };
+          startPosRef.current = currentGrid;
+          targetPosRef.current = targetGrid;
         } else {
           isBumpingRef.current = true;
           bumpTimerRef.current = 0;

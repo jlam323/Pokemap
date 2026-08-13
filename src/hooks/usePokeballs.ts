@@ -2,7 +2,7 @@ import React, { useCallback, useRef, MutableRefObject } from 'react';
 import { Pokeball, Entity, Item } from '../types';
 import { CATCH_SUCCESS_SEQUENCE, CATCH_FAILURE_SEQUENCE, BALL_TYPES, TILE_SIZE, FAILURE_PHRASES } from '../constants';
 import { POKEMON_NPC_BASES } from '../data/pokemon';
-import { isAtPos } from '../lib/gameUtils';
+import { isAtPos, toGridPos } from '../lib/gameUtils';
 import { gameStore } from '../stores/GameStore';
 
 const MAX_DISTANCE = 10;
@@ -210,16 +210,24 @@ export function usePokeballs({
       ball.pos = { x: currentX, y: currentY };
 
       // Round to grid to check for pokemon collisions
-      const gridX = Math.round(currentX / TILE_SIZE) * TILE_SIZE;
-      const gridY = Math.round(currentY / TILE_SIZE) * TILE_SIZE;
+      const gridPos = toGridPos({ x: currentX, y: currentY });
 
-      // Check for collision with Pokemon NPCs
-      const hitPokemon = npcsRef.current.find(npc => 
-        npc.type === 'pokemon' &&  // Changed EntityType.POKEMON to 'pokemon' string
-        !npc.isActionActive &&
-        !pokeballsRef.current.some(b => b.isCapturing && b.hitEntityId === npc.id) &&
-        isAtPos(npc.pos, { x: gridX, y: gridY })
-      );
+      // Check for collision with Pokemon NPCs (handles both grid tile overlap and pixel proximity)
+      const hitPokemon = npcsRef.current.find(npc => {
+        if (npc.type !== 'pokemon' || npc.isActionActive) return false;
+        if (pokeballsRef.current.some(b => b.isCapturing && b.hitEntityId === npc.id)) return false;
+
+        // 1. Pixel proximity check for mid-movement hits
+        const dist = Math.hypot(currentX - npc.pos.x, currentY - npc.pos.y);
+        if (dist < TILE_SIZE * 0.75) return true;
+
+        // 2. Tile grid checks (current visual pos, targetPos, or startPos)
+        if (isAtPos(npc.pos, gridPos)) return true;
+        if (npc.startPos && isAtPos(npc.startPos, gridPos)) return true;
+        if (npc.targetPos && isAtPos(npc.targetPos, gridPos)) return true;
+
+        return false;
+      });
 
       if (hitPokemon) {
         ball.isCollided = true;
@@ -234,13 +242,29 @@ export function usePokeballs({
         ball.pos = { ...hitPokemon.pos };
         changed = true;
 
-        // Hide pokemon while capturing in ref for the engine
-        npcsRef.current = npcsRef.current.map(n => n.id === hitPokemon.id ? { ...n, isActionActive: true } : n);
+        const capturedPos = toGridPos(hitPokemon.pos);
+
+        // Stop pokemon movement and hide pokemon while capturing in ref for the engine
+        npcsRef.current = npcsRef.current.map(n => n.id === hitPokemon.id ? { 
+          ...n, 
+          isActionActive: true,
+          isMoving: false,
+          pos: capturedPos,
+          startPos: undefined,
+          targetPos: undefined
+        } : n);
 
         // Hide pokemon while capturing in state
         gameStore.setGameState(prev => ({
           ...prev,
-          npcs: prev.npcs.map(n => n.id === hitPokemon.id ? { ...n, isActionActive: true } : n)
+          npcs: prev.npcs.map(n => n.id === hitPokemon.id ? { 
+            ...n, 
+            isActionActive: true,
+            isMoving: false,
+            pos: capturedPos,
+            startPos: undefined,
+            targetPos: undefined
+          } : n)
         }));
 
         return true;

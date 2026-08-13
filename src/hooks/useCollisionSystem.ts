@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Entity, Item } from '../types';
+import { toGridKey } from '../lib/gameUtils';
 
 /**
  * Hook to manage the game's collision map.
@@ -15,6 +16,7 @@ export function useCollisionSystem() {
 
   /**
    * Initializes the collision map with the positions of the player, NPCs, and uncollected items.
+   * Ensures all stored coordinates are rounded to tile grid boundaries.
    * 
    * @param player - The player entity
    * @param npcs - Array of current NPC entities
@@ -22,15 +24,26 @@ export function useCollisionSystem() {
    */
   const initCollisionMap = useCallback((player: Entity, npcs: Entity[], items: Item[]) => {
     const map = new Set<string>();
-    map.add(`${player.pos.x},${player.pos.y}`);
+
+    map.add(toGridKey(player.pos));
+    if (player.targetPos) {
+      map.add(toGridKey(player.targetPos));
+    }
+
     npcs.forEach(npc => {
-      map.add(`${npc.pos.x},${npc.pos.y}`);
+      if (npc.isActionActive) return;
+
+      map.add(toGridKey(npc.pos));
+      if (npc.startPos) map.add(toGridKey(npc.startPos));
+      if (npc.targetPos) map.add(toGridKey(npc.targetPos));
     });
+
     items.forEach(item => {
       if (!item.isCollected) {
-        map.add(`${item.pos.x},${item.pos.y}`);
+        map.add(toGridKey(item.pos));
       }
     });
+
     collisionMapRef.current = map;
   }, []);
 
@@ -39,3 +52,4 @@ export function useCollisionSystem() {
     initCollisionMap
   };
 }
+
