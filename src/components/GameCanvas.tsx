@@ -117,7 +117,7 @@ export default observer(function GameCanvas() {
 
     return () => {
       if (observer) observer.disconnect();
-      cancelAnimationFrame(frameId);
+      if (frameId) cancelAnimationFrame(frameId);
     };
   }, [overlayMode]);
 
@@ -437,11 +437,13 @@ export default observer(function GameCanvas() {
   };
 
 
+  const animFrameRef = useRef<number | null>(null);
+
   useEffect(() => {
     drawRef.current = draw;
   }, [draw]);
 
-  const loop = (time: number) => {
+  const loop = useCallback((time: number) => {
     if (!lastTimeRef.current) lastTimeRef.current = time;
     const dt = time - lastTimeRef.current;
     lastTimeRef.current = time;
@@ -453,13 +455,20 @@ export default observer(function GameCanvas() {
       drawRef.current(ctx);
     }
 
-    requestAnimationFrame(loop);
-  };
+    animFrameRef.current = requestAnimationFrame(loop);
+  }, []);
 
   useEffect(() => {
-    const frameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frameId);
-  }, [update, isLoaded]); // Re-start loop when loaded
+    if (!isLoaded) return;
+
+    animFrameRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+    };
+  }, [isLoaded, loop]);
 
   const renderCanvas = () => (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
